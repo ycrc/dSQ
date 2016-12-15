@@ -1,0 +1,2 @@
+# dSQ
+dead Simple Queue
