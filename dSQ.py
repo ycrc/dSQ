@@ -1,15 +1,23 @@
-#!/bin/env python
+#!/usr/bin/env python
+import os
+import subprocess
+import argparse
 
-import sys, subprocess, os
+#use fancy argument parsing
+parser = argparse.ArgumentParser()
+parser.add_argument('taskfile', type=argparse.FileType('r'))
+#capture the rest of the arguments
+parser.add_argument('rest', nargs=argparse.REMAINDER)
+args = parser.parse_args()
 
-taskfile=sys.argv[1]
-slurmflags=sys.argv[2:]
+num_tasks = sum(1 for line in args.taskfile)
 
-script=os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'dSQbatch.py')
-tasks=len(open(taskfile).readlines())
+script = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'dSQbatch.py')
 
-cmd="sbatch --array=0-%d %s %s %s" % (tasks-1, " ".join(slurmflags), script, taskfile)
+cmd="sbatch --array=0-{} {} {} {}".format(num_tasks-1,
+                                          " ".join(args.rest),
+                                          script,
+                                          args.taskfile.name)
 
 subprocess.call(cmd, shell=True)
-
 
