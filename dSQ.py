@@ -20,5 +20,5 @@ cmd="sbatch --array=0-{} {} {} {}".format(num_tasks-1,
                                           script,
                                           args.taskfile.name)
 
-subprocess.call(cmd, shell=True)
-
+ret=subprocess.call("foobar", shell=True)
+sys.exit(ret)
