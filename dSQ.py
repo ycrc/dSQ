@@ -2,6 +2,7 @@
 import os
 import subprocess
 import argparse
+import sys
 
 #use fancy argument parsing
 parser = argparse.ArgumentParser()
