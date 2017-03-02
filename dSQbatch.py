@@ -16,10 +16,7 @@ with open(taskfile, 'r') as tf:
     for i, l in enumerate(tf):
         if i == tid:
             mycmd=l.strip()
-num_cmds = i
-
-# sanity check that size of array job matches taskfile.  
-assert num_cmds == int(os.environ.get('SLURM_ARRAY_TASK_MAX')), "Something is wrong. The number of jobs and slurm task number don't match!"
+            break
 
 # run task and track its execution time
 st = datetime.now()
