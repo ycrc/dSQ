@@ -2,7 +2,7 @@ sleep 30; hostname > TASK.0
 sleep 30; hostname > TASK.1
 sleep 30; hostname > TASK.2
 sleep 30; hostname > TASK.3
-sleep 30; hostname > TASK.4
+# sleep 30; hostname > TASK.4
 sleep 30; hostname > TASK.5
 sleep 30; hostname > TASK.6
 sleep 30; hostname > TASK.7
@@ -29,7 +29,7 @@ sleep 30; hostname > TASK.27
 sleep 30; hostname > TASK.28
 sleep 30; hostname > TASK.29
 sleep 30; hostname > TASK.30
-sleep 30; hostname > TASK.31
+# sleep 30; hostname > TASK.31
 sleep 30; hostname > TASK.32
 sleep 30; hostname > TASK.33
 sleep 30; hostname > TASK.34
