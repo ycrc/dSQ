@@ -1,31 +1,123 @@
 #!/usr/bin/env python
-import os
+from os import path
 import subprocess
+import itertools
 import argparse
 import sys
 
-desc = """Dead Simple Queue
-A simple utility for submitting a list of tasks as a job array, using sbatch. Tasks that return non-zero exit codes will be output to the job_<slurm job id>.REMAINING file. The job_<slurm job id>.STATUS file will contain info about the tasks run and contains the following tab-separated columns:
+__version__ = '0.2'
+desc = """Dead Simple Queue v{}
+https://github.com/ycrc/dSQ
+A simple utility for submitting a list of tasks as a job array using sbatch.
+Specify a task file and any sbatch parameters and dSQ will construct a job 
+array submission for you. The task file should specify one independent, 
+parallel task you want to run per line. Empty lines or lines that begin 
+with # will be ignored. Without specifying any additional sbatch arguments, 
+some defaults will be set.
+
+Output:
+Tasks that return non-zero exit codes will be output to the 
+job_<slurm job id>.REMAINING file. The job_<slurm job id>.STATUS file 
+will contain info about the tasks run and contains the following 
+tab-separated columns:
 Task_ID, Exit_Code, Time_Started, Time_Ended, Time_Elapsed, Task
 
-run sbatch --help for more info on sbatch options."""
+run sbatch --help or see https://slurm.schedmd.com/sbatch.html
+for more info on sbatch options.""".format(__version__)
 
-#use fancy argument parsing
-parser = argparse.ArgumentParser(description=desc, usage='%(prog)s taskfile [slurm args] ...', 
-                                 formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument('taskfile', type=argparse.FileType('r'), help="Task file, one task per line")
-#capture the rest of the arguments
-parser.add_argument('slurm_args', nargs=argparse.REMAINDER, help="flags and arguments to sbatch") 
-args = parser.parse_args()
+#helper functions for array range formatting
+#collapse task numbers in job file to ranges
+def _collapse_ranges(tasknums):
+    #takes a list of numbers, returns tuples of numbers that specify representative ranges
+    #inclusive
+    for i, t in itertools.groupby(enumerate(tasknums), lambda tx: tx[1]-tx[0]):
+        t = list(t)
+        yield t[0][1], t[-1][1]
 
-num_tasks = sum(1 for line in args.taskfile)
+#format job ranges
+def format_range(tasknums):
+    ranges = list(_collapse_ranges(tasknums))
+    return ','.join(['{}-{}'.format(x[0],x[1]) if x[0]!=x[1] else str(x[0]) for x in ranges]) 
 
-script = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'dSQbatch.py')
+#put back together slurm arguments
+def parse_extras(arg_list):
+    better_list = []
+    for arg in arg_list:
+        if arg.startswith('-'):
+            better_list.append(arg)
+        else:
+            better_list[-1] += ' ' + arg
+    return better_list
 
-cmd="sbatch --array=0-{} {} {} {}".format(num_tasks-1,
-                                          " ".join(args.slurm_args),
-                                          script,
-                                          args.taskfile.name)
+#argument parsing
+parser = argparse.ArgumentParser(description=desc, 
+                                 usage='%(prog)s taskfile [slurm args] ...', 
+                                 formatter_class=argparse.RawTextHelpFormatter,
+                                 prog='dSQ.py')
+parser.add_argument('--version',
+                    action='version',
+                    version='%(prog)s {}'.format(__version__))
+parser.add_argument('--submit',
+                    action='store_true',
+                    help='Submit the job array on the fly instead of printing to stdout.')
+parser.add_argument('--max-tasks',
+                    nargs=1,
+                    help='Maximum number of simultaneously running tasks from the job array')
+parser.add_argument('--taskfile',
+                    nargs=1,
+                    required=True,
+                    type=argparse.FileType('r'),
+                    help='Task file, one task per line')
+args, extra_args = parser.parse_known_args()
+print(args)
+print(extra_args)
 
-ret=subprocess.call(cmd, shell=True)
-sys.exit(ret)
+#organize job info
+jobinfo = {}
+jobinfo['max_tasks'] = args.max_tasks
+jobinfo['num_tasks'] = 0
+jobinfo['task_id_list'] = []
+jobinfo['script'] = path.join(path.dirname(path.abspath(sys.argv[0])), 'dSQbatch.py')
+jobinfo['taskfile_name'] = args.taskfile[0].name
+jobinfo['slurm_args'] = parse_extras(extra_args)
+
+#get job array IDs
+for i, line in enumerate(args.taskfile[0]):
+    if not (line.startswith('#') or line.rstrip() == ''):
+        jobinfo['task_id_list'].append(i)
+        jobinfo['num_tasks']+=1
+
+#make sure there are tasks to submit
+if jobinfo['num_tasks'] == 0:
+    sys.stderr.write('No tasks found in {taskfile_name}\n'.format(**jobinfo))
+    sys.exit(1)
+jobinfo['array_range'] = format_range(jobinfo['task_id_list'])
+
+#set some defaults for the lazy if they didnt specify any sbatch args
+if len(jobinfo['slurm_args']) == 0:
+    jobinfo['slurm_args'] = ['--partition=general',
+                             '--job-name={taskfile_name}'.format(**jobinfo),
+                             '--ntasks={num_tasks}'.format(**jobinfo),
+                             '--cpus-per-task=1',
+                             '--mem-per-cpu=1024']
+
+#set array range string
+if jobinfo['max_tasks'] == None:
+    jobinfo['slurm_args'] += [ '--array={array_range}'.format(**jobinfo) ]
+else:
+    jobinfo['max_tasks'] = args.max_tasks[0]
+    jobinfo['slurm_args'] += [ '--array={array_range}%{max_tasks}'.format(**jobinfo) ]
+
+#submit or print the job script
+if args.submit:
+    jobinfo['cli_args'] = ' '.join(jobinfo['slurm_args'])
+    cmd = 'sbatch {cli_args} {script} {taskfile_name}'.format(**jobinfo)
+    print('submitting:\n {}'.format(cmd))
+    ret=subprocess.call(cmd, shell=True)
+    sys.exit(ret)
+else:
+    print('#!/bin/bash\n')
+    for option in jobinfo['slurm_args']:
+        print('#SBATCH {}'.format(option))
+    print('\n{script} {taskfile_name}'.format(**jobinfo))
+
