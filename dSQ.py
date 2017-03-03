@@ -4,6 +4,7 @@ import subprocess
 import itertools
 import argparse
 import sys
+import re
 
 __version__ = '0.2'
 desc = """Dead Simple Queue v{}
@@ -48,6 +49,18 @@ def parse_extras(arg_list):
         else:
             better_list[-1] += ' ' + arg
     return better_list
+
+#try getting user's email for job info forwarding
+def get_user_email():
+    forward_file = path.join(path.expanduser('~'), '.forward')
+    if path.isfile(forward_file):
+        email = open(forward_file, 'r').readline().rstrip()
+        emailre = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+        email_match = re.match(emailre, email)
+    if email_match is not None:
+        return email_match.group(0)
+    else:
+        return None
 
 #argument parsing
 parser = argparse.ArgumentParser(description=desc, 
@@ -99,7 +112,15 @@ if len(jobinfo['slurm_args']) == 0:
                              '--job-name={taskfile_name}'.format(**jobinfo),
                              '--ntasks={num_tasks}'.format(**jobinfo),
                              '--cpus-per-task=1',
-                             '--mem-per-cpu=1024']
+                             '--mem-per-cpu=1024'
+                             ]
+    #try to get user email
+    uemail = get_user_email()
+    if uemail is not None:
+        jobinfo['email'] = uemail
+        jobinfo['slurm_args'].append('--mail-type=ALL')
+        jobinfo['slurm_args'].append('--mail-user={email}'.format(**jobinfo))
+
 
 #set array range string
 if jobinfo['max_tasks'] == None:
