@@ -82,8 +82,6 @@ parser.add_argument('--taskfile',
                     type=argparse.FileType('r'),
                     help='Task file, one task per line')
 args, extra_args = parser.parse_known_args()
-print(args)
-print(extra_args)
 
 #organize job info
 jobinfo = {}
