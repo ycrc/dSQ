@@ -6,7 +6,7 @@ import argparse
 import sys
 import re
 
-__version__ = '0.2'
+__version__ = '0.3'
 desc = """Dead Simple Queue v{}
 https://github.com/ycrc/dSQ
 A simple utility for submitting a list of tasks as a job array using sbatch.
