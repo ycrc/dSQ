@@ -25,5 +25,10 @@ Optional dSQ arguments:
 ## Output
 Tasks that return non-zero exit codes will be output to the `job_<slurm job id>.REMAINING` file. The `job_<slurm job id>.STATUS` file will contain info about the tasks run and contains the following tab-separated columns:
 
-| Task_ID | Exit_Code | Time_Started | Time_Ended | Time_Elapsed | Task |
-| :------ | :-------- | :----------- | :--------- | :----------- | :--- |
+* Task_ID: the zero-based line number from your task file
+* Exit_Code: exit code returned from your task
+* Time_Started: time started, formatted as year-month-day hour:minute:second
+* Time_Ended: time started, formatted as year-month-day hour:minute:second
+* Time_Elapsed: in seconds
+* Task: the line from your task file
+
