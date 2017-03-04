@@ -24,7 +24,22 @@ tab-separated columns:
 Task_ID, Exit_Code, Time_Started, Time_Ended, Time_Elapsed, Task
 
 run sbatch --help or see https://slurm.schedmd.com/sbatch.html
-for more info on sbatch options.""".format(__version__)
+for a complete list of sbatch arguments.
+
+Some useful sbatch aruments:
+--mail-type=type            notify on state change: BEGIN, END, FAIL or ALL
+--mail-user=user            who to send email notification for job state
+                            changes
+-p, --partition=partition   partition requested
+-N, --nodes=N               number of nodes on which to run (N = min[-max])
+--ntasks-per-node=n         number of tasks to invoke on each node
+--ntasks-per-core=n         number of tasks to invoke on each core
+-c, --cpus-per-task=ncpus   number of cores required per task
+--mincpus=n                 minimum number of cores per node
+--mem=MB                    amount of memory for whole job
+--mem-per-cpu=MB            amount of memory per allocated cpu required.
+                            --mem >= --mem-per-cpu if --mem is specified.
+""".format(__version__)
 
 #helper functions for array range formatting
 #collapse task numbers in job file to ranges
@@ -63,24 +78,31 @@ def get_user_email():
         return None
 
 #argument parsing
-parser = argparse.ArgumentParser(description=desc, 
-                                 usage='%(prog)s taskfile [slurm args] ...', 
+parser = argparse.ArgumentParser(description=desc,
+                                 add_help=False, 
+                                 usage='%(prog)s --taskfile taskfile [dSQ args] [slurm args]', 
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  prog='dSQ.py')
-parser.add_argument('--version',
-                    action='version',
-                    version='%(prog)s {}'.format(__version__))
-parser.add_argument('--submit',
-                    action='store_true',
-                    help='Submit the job array on the fly instead of printing to stdout.')
-parser.add_argument('--max-tasks',
-                    nargs=1,
-                    help='Maximum number of simultaneously running tasks from the job array')
-parser.add_argument('--taskfile',
-                    nargs=1,
-                    required=True,
-                    type=argparse.FileType('r'),
-                    help='Task file, one task per line')
+required_dsq = parser.add_argument_group('Required dSQ arguments')
+optional_dsq = parser.add_argument_group('Optional dSQ arguments')
+optional_dsq.add_argument('-h','--help', 
+                          action='help',
+                          default=argparse.SUPPRESS,
+                          help='show this help message and exit')
+optional_dsq.add_argument('--version',
+                          action='version',
+                          version='%(prog)s {}'.format(__version__))
+optional_dsq.add_argument('--submit',
+                          action='store_true',
+                          help='Submit the job array on the fly instead of printing to stdout.')
+optional_dsq.add_argument('--max-tasks',
+                          nargs=1,
+                          help='Maximum number of simultaneously running tasks from the job array')
+required_dsq.add_argument('--taskfile',
+                          nargs=1,
+                          required=True,
+                          type=argparse.FileType('r'),
+                          help='Task file, one task per line')
 args, extra_args = parser.parse_known_args()
 
 #organize job info
