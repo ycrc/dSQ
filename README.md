@@ -9,15 +9,17 @@ First, you'll need to generate a task file. Each line of this task file needs to
 
 
 ```
-dSQ.py --taskfile taskfile [slurm args]
+dSQ.py --taskfile taskfile [dSQ args] [slurm args]
 
-optional arguments:
+Required dSQ arguments:
+  --taskfile TASKFILE   Task file, one task per line
+
+Optional dSQ arguments:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
   --submit              Submit the job array on the fly instead of printing to stdout.
   --max-tasks MAX_TASKS
                         Maximum number of simultaneously running tasks from the job array
-  --taskfile TASKFILE   Task file, one task per line
 ```
 
 ## Output
