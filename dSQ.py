@@ -31,14 +31,14 @@ Some useful sbatch aruments:
 --mail-user=user            who to send email notification for job state
                             changes
 -p, --partition=partition   partition requested
--N, --nodes=N               number of nodes on which to run (N = min[-max])
+-N, --nodes=N               number of nodes on which to run each task
 --ntasks-per-node=n         number of tasks to invoke on each node
 --ntasks-per-core=n         number of tasks to invoke on each core
 -c, --cpus-per-task=ncpus   number of cores required per task
 --mincpus=n                 minimum number of cores per node
---mem=MB                    amount of memory for whole job
---mem-per-cpu=MB            amount of memory per allocated cpu required.
-                            --mem >= --mem-per-cpu if --mem is specified.
+--mem=MB                    amount of memory to request per node
+--mem-per-cpu=MB            amount of memory per allocated cpu
+                              --mem >= --mem-per-cpu if --mem is specified.
 """.format(__version__)
 
 #helper functions for array range formatting
