@@ -37,13 +37,12 @@ try:
     succeeded = set()
     failed = set()
     norun = set()
-    for i,l in enumerate(args.statusfile[0]):
-        print(l)
-        exit_code = l.split('\t',2)[1]
+    for l in args.statusfile[0]:
+        tid, exit_code, rest = l.split('\t',2)
         if exit_code == "0":
-            succeeded.add(i)
+            succeeded.add(tid)
         else:
-            failed.add(i)
+            failed.add(tid)
 
     for i,l in enumerate(args.taskfile[0]):
         if i not in succeeded:
