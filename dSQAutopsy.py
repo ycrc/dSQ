@@ -40,9 +40,9 @@ try:
     for l in args.statusfile[0]:
         tid, exit_code, rest = l.split('\t',2)
         if exit_code == "0":
-            succeeded.add(tid)
+            succeeded.add(int(tid))
         else:
-            failed.add(tid)
+            failed.add(int(tid))
 
     for i,l in enumerate(args.taskfile[0]):
         if i not in succeeded:
