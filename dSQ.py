@@ -129,7 +129,7 @@ def set_defaults(job_info):
                              '--ntasks':'1',
                              '--cpus-per-task':'1',
                              '--mem-per-cpu':'5G'
-                            }
+                             }
                             
     uemail = get_user_email()
     if uemail is not None:
@@ -214,9 +214,9 @@ if args.submit:
 
     for option, value in job_info['slurm_args'].iteritems():
         if option == 'extra':
-            job_info['cli_args'] += ' '.join(value)
+            job_info['cli_args'] += ' '+' '.join(value)
         else:
-            job_info['cli_args'] += '%s=%s' % (option, value)
+            job_info['cli_args'] += ' %s=%s' % (option, value)
 
     cmd = 'sbatch {cli_args} {script} {taskfile_name}'.format(**job_info)
     print('submitting:\n {}'.format(cmd))
