@@ -58,6 +58,11 @@ Some useful sbatch aruments:
                               --mem >= --mem-per-cpu if --mem is specified.
 """.format(__version__, '\n'.join(wrap(', '.join(partitions), 80)))
 
+slurm_flag_dict = {'-J': '--job-name',
+                   '-n': '--ntasks',
+                   '-c': '--cpus-per-task'}
+
+
 # helper functions for array range formatting
 # collapse task numbers in job file to ranges
 def _collapse_ranges(tasknums):
@@ -67,21 +72,45 @@ def _collapse_ranges(tasknums):
         t = list(t)
         yield t[0][1], t[-1][1]
 
+
 # format job ranges
 def format_range(tasknums):
     ranges = list(_collapse_ranges(tasknums))
     return ','.join(['{}-{}'.format(x[0],x[1]) if x[0]!=x[1] else str(x[0]) for x in ranges]) 
 
-# put back together slurm arguments
-def parse_extras(arg_list):
-    better_list = []
-    for arg in arg_list:
-        if arg.startswith('-'):
-            better_list.append(arg)
-        else:
-            better_list[-1] += ' ' + arg
-    return better_list
 
+# put back together slurm arguments
+def parse_user_slurm_args(job_info, arg_list):
+    
+    extra_slurm_args = []
+
+    i = 0
+    while i < len(arg_list):
+        arg = arg_list[i]
+
+        if arg.startswith('--'):
+            key, value = arg.split('=')
+
+            if key in job_info['slurm_args'].keys():
+                job_info['slurm_args'][key] = value
+            else:
+                extra_slurm_args.append(arg)
+
+        elif arg.startswith('-') :
+            i += 1
+            value = arg_list[i]
+            if arg in slurm_flag_dict.keys():
+                job_info['slurm_args'][slurm_flag_dict[arg]] = value
+            else:
+                extra_slurm_args.append(arg+' '+value)
+        
+        else:
+            sys.exit("Error parsing arguments")
+
+        i += 1
+
+    job_info['slurm_args']['extra'] = extra_slurm_args
+    
 # try getting user's email for job info forwarding
 def get_user_email():
     forward_file = path.join(path.expanduser('~'), '.forward')
@@ -95,16 +124,18 @@ def get_user_email():
         return None
 
 # set defaults for the lazy
-def set_defaults(jobinfo):
-    jobinfo['slurm_args'] = ['--job-name={taskfile_name}'.format(**jobinfo),
-                             '--ntasks=1'.format(**jobinfo),
-                             '--cpus-per-task=1',
-                             '--mem-per-cpu=5G']
+def set_defaults(job_info):
+    job_info['slurm_args'] = {'--job-name' : job_info['taskfile_name'],
+                             '--ntasks':'1',
+                             '--cpus-per-task':'1',
+                             '--mem-per-cpu':'5G'
+                            }
+                            
     uemail = get_user_email()
     if uemail is not None:
-        jobinfo['email'] = uemail
-        jobinfo['slurm_args'].append('--mail-type=ALL')
-        jobinfo['slurm_args'].append('--mail-user={email}'.format(**jobinfo))
+        job_info['email'] = uemail
+        job_info['slurm_args']['--mail-type'] = 'ALL'
+        job_info['slurm_args']['--mail-user'] = job_info['email']
 
 # argument parsing
 parser = argparse.ArgumentParser(description=desc,
@@ -132,57 +163,76 @@ required_dsq.add_argument('--taskfile',
                           required=True,
                           type=argparse.FileType('r'),
                           help='Task file, one task per line')
-args, extra_args = parser.parse_known_args()
+
+args, user_slurm_args = parser.parse_known_args()
 
 #organize job info
-jobinfo = {}
-jobinfo['max_array_size'] = MaxArraySize
-jobinfo['max_tasks'] = args.max_tasks
-jobinfo['num_tasks'] = 0
-jobinfo['task_id_list'] = []
-jobinfo['script'] = path.join(path.dirname(path.abspath(sys.argv[0])), 'dSQBatch.py')
-jobinfo['taskfile_name'] = args.taskfile[0].name
-jobinfo['slurm_args'] = parse_extras(extra_args)
+job_info = {}
+job_info['max_array_size'] = MaxArraySize
+job_info['max_tasks'] = args.max_tasks
+job_info['num_tasks'] = 0
+job_info['task_id_list'] = []
+job_info['script'] = path.join(path.dirname(path.abspath(sys.argv[0])), 'dSQBatch.py')
+job_info['taskfile_name'] = args.taskfile[0].name
+
+# set defaults
+set_defaults(job_info)
+
+# pull in custom user slurm args
+parse_user_slurm_args(job_info, user_slurm_args)
 
 #get job array IDs
 for i, line in enumerate(args.taskfile[0]):
     if not (line.startswith('#') or line.rstrip() == ''):
-        jobinfo['task_id_list'].append(i)
-        jobinfo['num_tasks']+=1
-jobinfo['max_array_idx'] = jobinfo['task_id_list'][-1]
+        job_info['task_id_list'].append(i)
+        job_info['num_tasks']+=1
+job_info['max_array_idx'] = job_info['task_id_list'][-1]
 
 #quit if we have too many array tasks
-if jobinfo['max_array_idx'] > jobinfo['max_array_size']:
-    print('Your task file would result in a job array with a maximum index of {max_array_idx}. This exceeds allowed array size of {max_array_size}. Please split the tasks into chunks that are smaller than {max_array_size}.'.format(**jobinfo))
+if job_info['max_array_idx'] > job_info['max_array_size']:
+    print('Your task file would result in a job array with a maximum index of {max_array_idx}. This exceeds allowed array size of {max_array_size}. Please split the tasks into chunks that are smaller than {max_array_size}.'.format(**job_info))
     sys.exit(1)
 
 #make sure there are tasks to submit
-if jobinfo['num_tasks'] == 0:
-    sys.stderr.write('No tasks found in {taskfile_name}\n'.format(**jobinfo))
+if job_info['num_tasks'] == 0:
+    sys.stderr.write('No tasks found in {taskfile_name}\n'.format(**job_info))
     sys.exit(1)
-jobinfo['array_range'] = format_range(jobinfo['task_id_list'])
-
-#set some defaults for the lazy if they didnt specify any sbatch args
-if len(jobinfo['slurm_args']) == 0:
-    set_defaults(jobinfo)
+job_info['array_range'] = format_range(job_info['task_id_list'])
 
 #set array range string
-if jobinfo['max_tasks'] == None:
-    jobinfo['slurm_args'] += [ '--array={array_range}'.format(**jobinfo) ]
+if job_info['max_tasks'] == None:
+    job_info['slurm_args']['--array'] = job_info['array_range']
 else:
-    jobinfo['max_tasks'] = args.max_tasks[0]
-    jobinfo['slurm_args'] += [ '--array={array_range}%{max_tasks}'.format(**jobinfo) ]
+    job_info['max_tasks'] = args.max_tasks[0]
+    job_info['slurm_args']['--array'] = '{array_range}%{max_tasks}'.format(**job_info)
+
 
 #submit or print the job script
 if args.submit:
-    jobinfo['cli_args'] = ' '.join(jobinfo['slurm_args'])
-    cmd = 'sbatch {cli_args} {script} {taskfile_name}'.format(**jobinfo)
+
+    job_info['cli_args'] = ''
+
+    for option, value in job_info['slurm_args'].iteritems():
+        if option == 'extra':
+            job_info['cli_args'] += ' '.join(value)
+        else:
+            job_info['cli_args'] += '%s=%s' % (option, value)
+
+    cmd = 'sbatch {cli_args} {script} {taskfile_name}'.format(**job_info)
     print('submitting:\n {}'.format(cmd))
     ret = call(cmd, shell=True)
     sys.exit(ret)
+
 else:
+    
     print('#!/bin/bash\n')
-    for option in jobinfo['slurm_args']:
-        print('#SBATCH {}'.format(option))
-    print('\n{script} {taskfile_name}'.format(**jobinfo))
+    for option, value in job_info['slurm_args'].iteritems():
+        if option == 'extra':
+            for extra_option in value:
+                print('#SBATCH %s' % extra_option)
+        else:
+            print('#SBATCH %s=%s' % (option, value))
+
+
+    print('\n{script} {taskfile_name}'.format(**job_info))
 
