@@ -7,7 +7,7 @@ import argparse
 import sys
 import re
 
-__version__ = '0.4'
+__version__ = '0.5'
 
 #get slurm info
 try:
