@@ -12,11 +12,11 @@ __version__ = '0.5'
 #get slurm info
 try:
     #get max configured array index
-    slurm_conf = check_output(['scontrol', 'show', 'conf']).split('\n')[:-1]
+    slurm_conf = check_output(['scontrol', 'show', 'conf'], universal_newlines=True).split('\n')[:-1]
     MaxArraySize = [int(x.split('=')[1]) for x in slurm_conf if x.startswith('MaxArraySize')][0]
     
     #get unique list of partitions, maintaining order
-    partitions_nu = [x.split()[0] for x in check_output(['sinfo', '-h']).split('\n')[:-1]]
+    partitions_nu = [x.split()[0] for x in check_output(['sinfo', '-h'], universal_newlines=True).split('\n')[:-1]]
     parts = set()
     partitions = [x for x in partitions_nu if x not in parts and not parts.add(x)]
     
