@@ -7,7 +7,7 @@ import argparse
 import sys
 import re
 
-__version__ = '0.5'
+__version__ = 0.7
 
 #get slurm info
 try:
@@ -212,7 +212,7 @@ if args.submit:
 
     job_info['cli_args'] = ''
 
-    for option, value in job_info['slurm_args'].iteritems():
+    for option, value in job_info['slurm_args'].items():
         if option == 'extra':
             job_info['cli_args'] += ' '+' '.join(value)
         else:
@@ -226,7 +226,7 @@ if args.submit:
 else:
     
     print('#!/bin/bash\n')
-    for option, value in job_info['slurm_args'].iteritems():
+    for option, value in job_info['slurm_args'].items():
         if option == 'extra':
             for extra_option in value:
                 print('#SBATCH %s' % extra_option)
