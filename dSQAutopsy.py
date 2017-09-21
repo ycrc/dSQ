@@ -3,7 +3,7 @@ from __future__ import print_function #to make printing stderr work cleanly
 import sys
 import argparse
 #from dSQ import __version__
-__version__ = 0.4
+__version__ = 0.7
 desc = """Dead Simple Queue Autopsy v{}
 https://github.com/ycrc/dSQ
 A helper script for analyzing the success state of your tasks after a dSQ 
