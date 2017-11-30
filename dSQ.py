@@ -113,6 +113,7 @@ def parse_user_slurm_args(job_info, arg_list):
     
 # try getting user's email for job info forwarding
 def get_user_email():
+    email_match = None
     forward_file = path.join(path.expanduser('~'), '.forward')
     if path.isfile(forward_file):
         email = open(forward_file, 'r').readline().rstrip()
