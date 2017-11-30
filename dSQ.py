@@ -129,7 +129,6 @@ def set_defaults(job_info):
     job_info['slurm_args'] = {'--job-name' : job_info['taskfile_name'],
                              '--ntasks':'1',
                              '--cpus-per-task':'1',
-                             '--mem-per-cpu':'5G'
                              }
                             
     uemail = get_user_email()
