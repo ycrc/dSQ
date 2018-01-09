@@ -7,7 +7,7 @@ import argparse
 import sys
 import re
 
-__version__ = 0.8
+__version__ = 0.9
 
 #get slurm info
 try:
@@ -26,35 +26,30 @@ except FileNotFoundError as e:
 
 desc = """Dead Simple Queue v{}
 https://github.com/ycrc/dSQ
-A simple utility for submitting a list of tasks as a job array using sbatch.
-The task file should specify one independent task you want to run per line. 
+A simple utility for submitting a list of jobss as a job array using sbatch.
+The job file should specify one independent job you want to run per line. 
 Empty lines or lines that begin with # will be ignored. Without specifying
 any additional sbatch arguments, some defaults will be set. To generate a 
-list of the tasks that didn't run or failed, use dSQAutopsy
+list of the jobss that didn't run or failed, use dSQAutopsy
 
 Output:
 The job_<slurm job id>_status.tsv file will contain the following tab-separated
-columns about your tasks:
-Task_ID, Exit_Code, Time_Started, Time_Ended, Time_Elapsed, Task
+columns about your jobs:
+Job_ID, Exit_Code, Time_Started, Time_Ended, Time_Elapsed, Job
 
 There appear to be the following partitions on this cluster (* means default):
 {}
 
-Note: The sbatch arguments you specify are for each task in your taskfile, 
+Note: The sbatch arguments you specify are for each jobs in your jobfile, 
 not the entire job array.
 
-Some useful sbatch aruments:
+Some useful sbatch arguments:
 --mail-type=type            notify on state change: BEGIN, END, FAIL or ALL
 --mail-user=user            who to send email notification for job state
                             changes
 -p, --partition=partition   partition requested
--N, --nodes=N               number of nodes on which to run each task
---ntasks-per-node=n         number of tasks to run on each node
---ntasks-per-core=n         number of tasks to run on each core
--c, --cpus-per-task=ncpus   number of cores required per task
---mincpus=n                 minimum number of cores per node
---mem=MB                    amount of memory to request per node
---mem-per-cpu=MB            amount of memory per allocated cpu
+-c, --cpus-per-task=ncpus   number of cpu cores required 
+--mem-per-cpu=MB            amount of memory per allocated cpu core
                               --mem >= --mem-per-cpu if --mem is specified.
 """.format(__version__, '\n'.join(wrap(', '.join(partitions), 80)))
 
@@ -64,18 +59,18 @@ slurm_flag_dict = {'-J': '--job-name',
 
 
 # helper functions for array range formatting
-# collapse task numbers in job file to ranges
-def _collapse_ranges(tasknums):
+# collapse job numbers in job file to ranges
+def _collapse_ranges(jobums):
     # takes a list of numbers, returns tuples of numbers that specify representative ranges
     # inclusive
-    for i, t in itertools.groupby(enumerate(tasknums), lambda tx: tx[1]-tx[0]):
+    for i, t in itertools.groupby(enumerate(jobnums), lambda tx: tx[1]-tx[0]):
         t = list(t)
         yield t[0][1], t[-1][1]
 
 
 # format job ranges
-def format_range(tasknums):
-    ranges = list(_collapse_ranges(tasknums))
+def format_range(jobnums):
+    ranges = list(_collapse_ranges(jobnums))
     return ','.join(['{}-{}'.format(x[0],x[1]) if x[0]!=x[1] else str(x[0]) for x in ranges]) 
 
 
@@ -126,7 +121,7 @@ def get_user_email():
 
 # set defaults for the lazy
 def set_defaults(job_info):
-    job_info['slurm_args'] = {'--job-name' : job_info['taskfile_name'],
+    job_info['slurm_args'] = {'--job-name' : job_info['jobfile_name'],
                              '--ntasks':'1',
                              '--cpus-per-task':'1',
                              }
@@ -140,7 +135,7 @@ def set_defaults(job_info):
 # argument parsing
 parser = argparse.ArgumentParser(description=desc,
                                  add_help=False, 
-                                 usage='%(prog)s --taskfile taskfile [dSQ args] [slurm args]', 
+                                 usage='%(prog)s --jobfile jobfile [dSQ args] [slurm args]', 
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  prog='dSQ')
 required_dsq = parser.add_argument_group('Required dSQ arguments')
@@ -155,25 +150,25 @@ optional_dsq.add_argument('--version',
 optional_dsq.add_argument('--submit',
                           action='store_true',
                           help='Submit the job array on the fly instead of printing to stdout.')
-optional_dsq.add_argument('--max-tasks',
+optional_dsq.add_argument('--max-jobs',
                           nargs=1,
-                          help='Maximum number of simultaneously running tasks from the job array')
-required_dsq.add_argument('--taskfile',
+                          help='Maximum number of simultaneously running jobs from the job array')
+required_dsq.add_argument('--jobfile',
                           nargs=1,
                           required=True,
                           type=argparse.FileType('r'),
-                          help='Task file, one task per line')
+                          help='Job file, one job per line')
 
 args, user_slurm_args = parser.parse_known_args()
 
 #organize job info
 job_info = {}
 job_info['max_array_size'] = MaxArraySize
-job_info['max_tasks'] = args.max_tasks
-job_info['num_tasks'] = 0
-job_info['task_id_list'] = []
+job_info['max_jobs'] = args.max_jobs
+job_info['num_jobs'] = 0
+job_info['job_id_list'] = []
 job_info['script'] = path.join(path.dirname(path.abspath(sys.argv[0])), 'dSQBatch.py')
-job_info['taskfile_name'] = args.taskfile[0].name
+job_info['jobfile_name'] = args.jobfile[0].name
 
 # set defaults
 set_defaults(job_info)
@@ -182,29 +177,29 @@ set_defaults(job_info)
 parse_user_slurm_args(job_info, user_slurm_args)
 
 #get job array IDs
-for i, line in enumerate(args.taskfile[0]):
+for i, line in enumerate(args.jobfile[0]):
     if not (line.startswith('#') or line.rstrip() == ''):
-        job_info['task_id_list'].append(i)
-        job_info['num_tasks']+=1
-job_info['max_array_idx'] = job_info['task_id_list'][-1]
+        job_info['job_id_list'].append(i)
+        job_info['num_jobs']+=1
+job_info['max_array_idx'] = job_info['job_id_list'][-1]
 
-#quit if we have too many array tasks
+#quit if we have too many array jobs
 if job_info['max_array_idx'] > job_info['max_array_size']:
-    print('Your task file would result in a job array with a maximum index of {max_array_idx}. This exceeds allowed array size of {max_array_size}. Please split the tasks into chunks that are smaller than {max_array_size}.'.format(**job_info))
+    print('Your job file would result in a job array with a maximum index of {max_array_idx}. This exceeds allowed array size of {max_array_size}. Please split the jobs into chunks that are smaller than {max_array_size}.'.format(**job_info))
     sys.exit(1)
 
-#make sure there are tasks to submit
-if job_info['num_tasks'] == 0:
-    sys.stderr.write('No tasks found in {taskfile_name}\n'.format(**job_info))
+#make sure there are jobs to submit
+if job_info['num_jobs'] == 0:
+    sys.stderr.write('No jobs found in {jobfile_name}\n'.format(**job_info))
     sys.exit(1)
-job_info['array_range'] = format_range(job_info['task_id_list'])
+job_info['array_range'] = format_range(job_info['job_id_list'])
 
 #set array range string
-if job_info['max_tasks'] == None:
+if job_info['max_jobs'] == None:
     job_info['slurm_args']['--array'] = job_info['array_range']
 else:
-    job_info['max_tasks'] = args.max_tasks[0]
-    job_info['slurm_args']['--array'] = '{array_range}%{max_tasks}'.format(**job_info)
+    job_info['max_jobs'] = args.max_jobs[0]
+    job_info['slurm_args']['--array'] = '{array_range}%{max_jobs}'.format(**job_info)
 
 
 #submit or print the job script
@@ -218,7 +213,7 @@ if args.submit:
         else:
             job_info['cli_args'] += ' %s=%s' % (option, value)
 
-    cmd = 'sbatch {cli_args} {script} {taskfile_name}'.format(**job_info)
+    cmd = 'sbatch {cli_args} {script} {jobfile_name}'.format(**job_info)
     print('submitting:\n {}'.format(cmd))
     ret = call(cmd, shell=True)
     sys.exit(ret)
@@ -234,5 +229,5 @@ else:
             print('#SBATCH %s=%s' % (option, value))
 
 
-    print('\n{script} {taskfile_name}'.format(**job_info))
+    print('\n{script} {jobfile_name}'.format(**job_info))
 
