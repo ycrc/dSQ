@@ -60,7 +60,7 @@ slurm_flag_dict = {'-J': '--job-name',
 
 # helper functions for array range formatting
 # collapse job numbers in job file to ranges
-def _collapse_ranges(jobums):
+def _collapse_ranges(jobnums):
     # takes a list of numbers, returns tuples of numbers that specify representative ranges
     # inclusive
     for i, t in itertools.groupby(enumerate(jobnums), lambda tx: tx[1]-tx[0]):
