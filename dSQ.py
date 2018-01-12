@@ -81,25 +81,25 @@ def parse_user_slurm_args(job_info, arg_list):
 
     i = 0
     while i < len(arg_list):
-        arg = arg_list[i]
+        try:
+            arg = arg_list[i]
 
-        if arg.startswith('--'):
-            key, value = arg.split('=')
+            if arg.startswith('--') and '=' in arg:
+                key, value = arg.split('=')
 
-            if key in job_info['slurm_args'].keys():
-                job_info['slurm_args'][key] = value
-            else:
-                extra_slurm_args.append(arg)
+                if key in job_info['slurm_args'].keys():
+                    job_info['slurm_args'][key] = value
+                else:
+                    extra_slurm_args.append(arg)
 
-        elif arg.startswith('-') :
-            i += 1
-            value = arg_list[i]
-            if arg in slurm_flag_dict.keys():
-                job_info['slurm_args'][slurm_flag_dict[arg]] = value
-            else:
-                extra_slurm_args.append(arg+' '+value)
-        
-        else:
+            elif arg.startswith('-') :
+                i += 1
+                value = arg_list[i]
+                if arg in slurm_flag_dict.keys():
+                    job_info['slurm_args'][slurm_flag_dict[arg]] = value
+                else:
+                    extra_slurm_args.append(arg+' '+value)
+        except Exception as e:
             sys.exit("Error parsing arguments")
 
         i += 1
