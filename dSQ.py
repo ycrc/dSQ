@@ -28,16 +28,14 @@ except FileNotFoundError as e:
 
 desc = """Dead Simple Queue v{}
 https://github.com/ycrc/dSQ
-A simple utility for submitting a list of jobs as a job array using sbatch. The job file should specify one independent job you want to run per line. Empty lines or lines that begin with # will be ignored. Without specifying any additional sbatch arguments, some defaults will be set. Once the submission script is generated, you can run it as instructed. To generate a list of the jobs that didn't run or failed, use dSQAutopsy, or dsqa for short. 
+A simple utility for submitting a list of jobs as a job array using sbatch. The job file should specify one independent job you want to run per line. Empty lines or lines that begin with # will be ignored. Without specifying any additional sbatch arguments, some defaults will be set. Once the submission script is generated, you can run it as instructed.
 
-NOTE: The sbatch arguments you specify are for each individual job in your jobfile, NOT the entire job array.
-
-dSQ Output:
-The job_jobid_status.tsv file will contain the following tab-separated
-columns about your jobs:
+dSQ will output a job_jobid_status.tsv file will contain the following tab-separated columns about your jobs:
 Job_ID, Exit_Code, Hostname, Time_Started, Time_Ended, Time_Elapsed, Job
 
-Run sbatch --help or man sbatch for more slurm options.
+To generate a list of the jobs that didn't run or failed, use dSQAutopsy, or dsqa for short. 
+
+Run sbatch --help or man sbatch for more slurm options. NOTE: The sbatch arguments you specify are for each individual job in your jobfile, NOT the entire job array.
 
 Some useful sbatch arguments:
 --mail-type=type           Email when job BEGIN, END, FAIL, REQUEUE, or ALL.
