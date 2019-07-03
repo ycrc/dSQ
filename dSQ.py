@@ -12,14 +12,14 @@ import re
 __version__ = 0.93
 
 # get terminal columns for wrapping
-term_rows, term_columns = [int(x) for x in check_output(["stty", "size"]).decode().split()]
+term_rows, term_columns = [int(x) for x in check_output(["stty", "size"]).split()]
 if term_columns < 25:
     term_columns = 25
 
 #get slurm info
 try:
     #get max configured array index
-    slurm_conf = check_output(["scontrol", "show", "conf"], universal_newlines=True).decode().split("\n")[:-1]
+    slurm_conf = check_output(["scontrol", "show", "conf"], universal_newlines=True).split("\n")[:-1]
     max_array_size = [int(x.split("=")[1]) for x in slurm_conf if x.startswith("MaxArraySize")][0]
     
 except FileNotFoundError as e:
