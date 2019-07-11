@@ -30,11 +30,11 @@ parser.add_argument('-v','--version',
 parser.add_argument('jobfile',
                     nargs=1,
                     type=argparse.FileType('r'),
-                    help='Job file, one job per line')
+                    help='Job file, one job per line (not your job submission script).')
 parser.add_argument('statusfile',
                     nargs=1,
                     type=argparse.FileType('r'),
-                    help='The status.tsv file generated from your dSQ run')
+                    help='The job_jobid_status.tsv file generated from your dSQ run.')
 
 args = parser.parse_args()
 
