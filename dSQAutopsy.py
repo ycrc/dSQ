@@ -8,7 +8,7 @@ from subprocess import check_output
 __version__ = 0.93
 
 # get terminal columns for wrapping
-term_rows, term_columns = [int(x) for x in check_output(["stty", "size"]).decode().split()]
+term_rows, term_columns = [int(x) for x in check_output(["stty", "size"]).split()]
 if term_columns < 25:
         term_columns = 25
 
