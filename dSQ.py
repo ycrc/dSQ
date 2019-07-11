@@ -161,7 +161,7 @@ if job_info["num_jobs"] == 0:
 
 # set output file format
 if args.output is not None:
-    job_info["slurm_args"]["--output"] = args.output
+    job_info["slurm_args"]["--output"] = args.output[0]
 else:
     job_info["slurm_args"]["--output"] = "dsq-{job_file_no_ext}-%A_%{array_fmt_width}a-%N.out".format(**job_info)
 
