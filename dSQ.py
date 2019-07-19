@@ -12,8 +12,12 @@ import re
 __version__ = 0.93
 
 # get terminal columns for wrapping
-term_rows, term_columns = [int(x) for x in check_output(["stty", "size"]).split()]
-if term_columns < 25:
+try:
+    term_rows, term_columns = [int(x) for x in check_output(["stty", "size"]).split()]
+    if term_columns < 25:
+        term_columns = 25
+# non-interactive use will throw this error, but that is ok
+except CalledProcessError
     term_columns = 25
 
 #get slurm info
