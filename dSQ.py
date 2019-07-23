@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from subprocess import call, check_output
+from subprocess import call, check_output, CalledProcessError
 from datetime import datetime
 from textwrap import fill 
 from os import path
@@ -11,13 +11,14 @@ import re
 
 __version__ = 0.93
 
-# get terminal columns for wrapping
-try:
+# Check if dSQ is being run interactively
+if sys.__stdin__.isatty():
+    # get terminal columns for wrapping
     term_rows, term_columns = [int(x) for x in check_output(["stty", "size"]).split()]
     if term_columns < 25:
         term_columns = 25
 # non-interactive use will throw this error, but that is ok
-except CalledProcessError
+else:
     term_columns = 25
 
 #get slurm info
