@@ -11,6 +11,12 @@ import re
 
 __version__ = 0.93
 
+def safe_fill(text, wrap_width):
+    if sys.__stdin__.isatty():
+        return fill(text, wrap_width)
+    else:
+        return text
+
 # Check if dSQ is being run interactively
 if sys.__stdin__.isatty():
     # get terminal columns for wrapping
@@ -49,7 +55,7 @@ Some useful sbatch arguments:
 --mem-per-cpu=MiB          Amount of memory per allocated cpu core per job.
 
 """.format(__version__)
-desc = "\n".join([fill(x, term_columns-1) for x in str.splitlines(desc)])
+desc = "\n".join([safe_fill(x, term_columns-1) for x in str.splitlines(desc)])
 
 # helper functions for array range formatting
 # collapse job numbers in job file to ranges
@@ -114,7 +120,7 @@ optional_dsq.add_argument("-J", "--job-name",
 optional_dsq.add_argument("-o", "--output",
                           nargs=1,
                           metavar="fmt_string",
-                          help=fill("Slurm output file pattern. There will be one file per line in your job file. To suppress slurm out files, set this to /dev/null. Defaults to dsq-jobfile-%%A_%%a-%%N.out", term_columns-24))
+                          help=safe_fill("Slurm output file pattern. There will be one file per line in your job file. To suppress slurm out files, set this to /dev/null. Defaults to dsq-jobfile-%%A_%%a-%%N.out", term_columns-24))
 # silently allow overriding --array, otherwise we calculate that
 optional_dsq.add_argument("-a", "--array",
                           nargs=1,
@@ -122,7 +128,7 @@ optional_dsq.add_argument("-a", "--array",
 optional_dsq.add_argument("--batch-file",
                           metavar="sub_script.sh",
                           nargs=1,
-                          help=fill("Name for batch script file. Defaults to dsq-jobfile-YYYY-MM-DD.sh", term_columns-24))
+                          help=safe_fill("Name for batch script file. Defaults to dsq-jobfile-YYYY-MM-DD.sh", term_columns-24))
 
 args, user_slurm_args = parser.parse_known_args()
 
@@ -155,7 +161,7 @@ else:
 
     # quit if we have too many array jobs
     if job_info["max_array_idx"] > job_info["max_array_size"]:
-        print(fill("Your job file would result in a job array with a maximum index of {max_array_idx}. This exceeds allowed array size of {max_array_size}. Split the jobs into chunks that are smaller than {max_array_size}, or do more per job.".format(**job_info), term_columns-1))
+        print(safe_fill("Your job file would result in a job array with a maximum index of {max_array_idx}. This exceeds allowed array size of {max_array_size}. Split the jobs into chunks that are smaller than {max_array_size}, or do more per job.".format(**job_info), term_columns-1))
         sys.exit(1)
     job_info["array_fmt_width"] = len(str(job_info["max_array_idx"]))
 
