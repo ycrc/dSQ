@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from subprocess import call, check_output, CalledProcessError
+from subprocess import call, check_output
 from datetime import datetime
 from textwrap import fill 
 from os import path
