@@ -129,7 +129,7 @@ optional_dsq.add_argument("--status-dir",
                           help="Directory to save the job_jobid_status.tsv file to. Defaults to working directory.")
 optional_dsq.add_argument("--stdout",
                           action="store_true",
-                          help="Print the job script to stdout instead of to a file.")
+                          help=argparse.SUPPRESS)
 optional_dsq.add_argument("--submit",
                           action="store_true",
                           help="Submit the job array on the fly instead of creating a submission script.")
