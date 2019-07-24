@@ -8,6 +8,11 @@ from functools import partial
 from subprocess import Popen
 from datetime import datetime
 
+"""
+This script accepts the name of a job file and a directory to save status info to. Meant to be called with submission scripts generated with dSQ.py.
+"""
+
+
 def forward_signal_to_child(pid, signum, frame):
     print("[dSQ]: ", pid, signum, frame)
     os.kill(pid, signum)
@@ -19,8 +24,11 @@ def exec_job(job_str):
     return_code = process.wait()
     return(return_code)
 
-# jobfile is a SQ style job file
+# jobfile is a path to text file with jobs, 1 per line
 jobfile = sys.argv[1]
+# statusfile output directory
+status_outdir = sys.argv[2]
+
 
 jid = int(os.environ.get("SLURM_ARRAY_JOB_ID"))
 tid = int(os.environ.get("SLURM_ARRAY_TASK_ID"))
@@ -50,7 +58,7 @@ out_dict = dict(zip(out_cols,
                     [tid, ret, hostname, time_start, time_end, time_elapsed, mycmd]))
 
 # append status file with job stats
-with open("job_{}_status.tsv".format(jid, tid), "a") as out_status:
+with open(os.path.join(status_outdir, "job_{}_status.tsv".format(jid)), "a") as out_status:
     out_status.write("{Array_Task_ID}\t{Exit_Code}\t{Hostname}\t{T_Start}\t{T_End}\t{T_Elapsed:.02f}\t{Task}\n".format(**out_dict))
 
 sys.exit(ret)
