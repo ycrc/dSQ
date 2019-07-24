@@ -109,6 +109,9 @@ optional_dsq.add_argument("--version",
 optional_dsq.add_argument("--submit",
                           action="store_true",
                           help="Submit the job array on the fly instead of creating a submission script.")
+optional_dsq.add_argument("--stdout",
+                          action="store_true",
+                          help="Print the job script to stdout instead of to a file.")
 optional_dsq.add_argument("--max-jobs",
                           metavar="number",
                           nargs=1,
@@ -190,11 +193,16 @@ else:
     job_info["slurm_args"]["--job-name"] = "dsq-{job_file_no_ext}".format(**job_info)
 
 # set batch script name
-if args.batch_file is not None:
-    job_info["batch_file_name"] = args.batch_file[0]
+if args.stdout:
+    job_info["batch_script_out"] = sys.stdout
 else:
-    job_info["batch_file_name"] = "dsq-{job_file_no_ext}-{today}.sh".format(**job_info)
-
+    try:
+        if args.batch_file is not None:
+            job_info["batch_script_out"] = open(args.batch_file[0], 'w')
+        else:
+            job_info["batch_script_out"] = open("dsq-{job_file_no_ext}-{today}.sh".format(**job_info), 'w')
+    except Exception as e:
+            print("Error: Couldn't open {batch_script_out} for writing. ".format(**job_info), e)
 
 # submit or print the job script
 if args.submit:
@@ -210,15 +218,12 @@ if args.submit:
     sys.exit(ret)
 
 else:
-    try:
-        with open(job_info["batch_file_name"], "w") as script_out:
-            print("#!/bin/bash", file=script_out) 
-            for option, value in job_info["slurm_args"].items():
-                print("#SBATCH {} {}".format(option, value), file=script_out)
-            if len(job_info["user_slurm_args"]) > 0:
-                print("#SBATCH {user_slurm_args}".format(**job_info), file=script_out)
-            print("\n{run_script} {job_file_name}".format(**job_info), file=script_out)
-        print("Batch script generated. To submit your jobs, run:\n sbatch {batch_file_name}".format(**job_info))
-    except Exception as e:
-        print("Error: Couldn't open {batch_file_name} for writing. ".format(**job_info), e)
+    print("#!/bin/bash", file=job_info["batch_script_out"]) 
+    for option, value in job_info["slurm_args"].items():
+        print("#SBATCH {} {}".format(option, value), file=job_info["batch_script_out"])
+    if len(job_info["user_slurm_args"]) > 0:
+        print("#SBATCH {user_slurm_args}".format(**job_info), file=job_info["batch_script_out"])
+    print("\n{run_script} {job_file_name} \n".format(**job_info), file=job_info["batch_script_out"])
+    if not args.stdout:
+        print("Batch script generated. To submit your jobs, run:\n sbatch {}".format(job_info["batch_script_out"].name))
 
