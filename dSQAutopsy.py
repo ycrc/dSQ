@@ -5,7 +5,7 @@ import argparse
 from textwrap import fill
 from subprocess import check_output
 
-__version__ = 0.93
+__version__ = 0.95
 
 # get terminal columns for wrapping
 term_rows, term_columns = [int(x) for x in check_output(["stty", "size"]).split()]
