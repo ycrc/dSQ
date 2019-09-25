@@ -10,7 +10,7 @@ import argparse
 import sys
 import re
 
-__version__ = 0.95
+__version__ = 0.96
 
 def safe_fill(text, wrap_width):
     if sys.__stdin__.isatty():
