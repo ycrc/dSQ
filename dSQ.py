@@ -10,7 +10,7 @@ import argparse
 import sys
 import re
 
-__version__ = 0.96
+__version__ = 1.0
 
 def safe_fill(text, wrap_width):
     if sys.__stdin__.isatty():
@@ -127,6 +127,9 @@ optional_dsq.add_argument("--status-dir",
                           metavar="dir",
                           nargs=1,
                           help="Directory to save the job_jobid_status.tsv file to. Defaults to working directory.")
+optional_dsq.add_argument("--supress-stats-file",
+                          action="store_true",
+                          help="Don't save job stats to job_jobid_status.tsv")
 optional_dsq.add_argument("--stdout",
                           action="store_true",
                           help=argparse.SUPPRESS)
@@ -148,6 +151,7 @@ job_info["num_jobs"] = 0
 job_info["job_id_list"] = []
 job_info["run_script"] = path.join(path.dirname(path.abspath(sys.argv[0])), "dSQBatch.py")
 job_info["job_file_name"] = path.abspath(args.job_file[0].name)
+job_info["job_file_arg"] = "--job-file {}".format(job_info["job_file_name"])
 job_info["slurm_args"] = {}
 job_info["user_slurm_args"] = " ".join(user_slurm_args)
 job_info["job_file_no_ext"] = path.splitext(path.basename(job_info["job_file_name"]))[0]
@@ -175,7 +179,7 @@ else:
 
 # make sure there are jobs to submit
 if job_info["num_jobs"] == 0:
-    sys.stderr.write("No jobs found in {job_file_name}\n".format(**job_info))
+    print("No jobs found in {job_file_name}".format(**job_info), file=sys.stderr)
     sys.exit(1)
 
 # set output file format
@@ -185,13 +189,17 @@ else:
     job_info["slurm_args"]["--output"] = "dsq-{job_file_no_ext}-%A_%{array_fmt_width}a-%N.out".format(**job_info)
 
 # set ouput directory
-if args.status_dir is not None:
-    job_info["status_dir"] = path.abspath(args.status_dir[0])
+if args.supress_stats_file:
+    job_info["status_dir_arg"] = "--supress-stats-file"
 else:
-    job_info["status_dir"] = path.abspath('./')
-if not os.access(job_info["status_dir"], os.W_OK | os.X_OK):
-    sys.stderr.write("{status_dir} doesn't appear to be a writeable directory.\n".format(**job_info))
-    sys.exit(1)
+    if args.status_dir is not None:
+        job_info["status_dir"] = path.abspath(args.status_dir[0])
+    else:
+        job_info["status_dir"] = path.abspath("./")
+    if not os.access(job_info["status_dir"], os.W_OK | os.X_OK):
+        print("{status_dir} does not appear to be a writeable directory.".format(**job_info), file=sys.stderr)
+        sys.exit(1)
+    job_info["status_dir_arg"] = "--status-dir {}".format(job_info["status_dir"])
 
 # set array range string
 if job_info["max_jobs"] == None:
@@ -206,18 +214,6 @@ if args.job_name is not None:
 else:
     job_info["slurm_args"]["--job-name"] = "dsq-{job_file_no_ext}".format(**job_info)
 
-# set batch script name
-if args.stdout:
-    job_info["batch_script_out"] = sys.stdout
-else:
-    try:
-        if args.batch_file is not None:
-            job_info["batch_script_out"] = open(args.batch_file[0], 'w')
-        else:
-            job_info["batch_script_out"] = open("dsq-{job_file_no_ext}-{today}.sh".format(**job_info), 'w')
-    except Exception as e:
-            print("Error: Couldn't open {batch_script_out} for writing. ".format(**job_info), e)
-
 # submit or print the job script
 if args.submit:
 
@@ -226,19 +222,31 @@ if args.submit:
     for option, value in job_info["slurm_args"].items():
         job_info["cli_args"] += " %s=%s" % (option, value)
 
-    cmd = "sbatch {cli_args} {user_slurm_args} {run_script} {job_file_name} {status_dir}".format(**job_info)
-    # print("submitting:\n {}".format(cmd))
+    cmd = "sbatch {cli_args} {user_slurm_args} {run_script} {job_file_arg} {status_dir_arg}".format(**job_info)
+    print("submitting:\n {}".format(cmd))
     ret = call(cmd, shell=True)
     sys.exit(ret)
 
 else:
+    # set batch script name
+    if args.stdout:
+        job_info["batch_script_out"] = sys.stdout
+    else:
+        try:
+            if args.batch_file is not None:
+                job_info["batch_script_out"] = open(args.batch_file[0], "w")
+            else:
+                job_info["batch_script_out"] = open("dsq-{job_file_no_ext}-{today}.sh".format(**job_info), "w")
+        except Exception as e:
+                print("Error: Couldn't open {batch_script_out} for writing. ".format(**job_info), e)
+                
     print("#!/bin/bash", file=job_info["batch_script_out"]) 
     for option, value in job_info["slurm_args"].items():
         print("#SBATCH {} {}".format(option, value), file=job_info["batch_script_out"])
     if len(job_info["user_slurm_args"]) > 0:
         print("#SBATCH {user_slurm_args}".format(**job_info), file=job_info["batch_script_out"])
     print("\n# DO NOT EDIT LINE BELOW".format(**job_info), file=job_info["batch_script_out"])
-    print("{run_script} {job_file_name} {status_dir}\n".format(**job_info), file=job_info["batch_script_out"])
+    print("{run_script} {job_file_arg} {status_dir_arg}\n".format(**job_info), file=job_info["batch_script_out"])
     if not args.stdout:
         print("Batch script generated. To submit your jobs, run:\n sbatch {}".format(job_info["batch_script_out"].name))
 

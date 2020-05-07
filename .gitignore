@@ -87,3 +87,8 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# dSQ files
+job_*_status.tsv
+dsq-*.sh
+dsq-*.out
