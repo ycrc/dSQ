@@ -29,7 +29,7 @@ A wrapper script to run job arrays from job files, where each line in the plain-
 """.format(__version__)
 
 parser = argparse.ArgumentParser(description=desc,
-                                 usage='%(prog)s --job-file jobfile.txt [--supress-stats-file | --status-dir dir/ ]', 
+                                 usage='%(prog)s --job-file jobfile.txt [--suppress-stats-file | --status-dir dir/ ]', 
                                  formatter_class=argparse.RawTextHelpFormatter,
                                  prog=sys.argv[0])
 parser.add_argument('-v','--version',
@@ -38,7 +38,7 @@ parser.add_argument('-v','--version',
 parser.add_argument('--job-file',
                     nargs=1,
                     help='Job file, one job per line (not your job submission script).')
-parser.add_argument("--supress-stats-file",
+parser.add_argument("--suppress-stats-file",
                     action="store_true",
                     help="Don't save job stats to job_jobid_status.tsv")
 parser.add_argument("--status-dir",
@@ -51,7 +51,7 @@ args = parser.parse_args()
 job_file = args.job_file[0]
 
 print_stats_file = True
-if args.supress_stats_file:
+if args.suppress_stats_file:
     print_stats_file = False
 else:
     status_outdir = args.status_dir[0]

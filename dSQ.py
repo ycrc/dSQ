@@ -127,7 +127,7 @@ optional_dsq.add_argument("--status-dir",
                           metavar="dir",
                           nargs=1,
                           help="Directory to save the job_jobid_status.tsv file to. Defaults to working directory.")
-optional_dsq.add_argument("--supress-stats-file",
+optional_dsq.add_argument("--suppress-stats-file",
                           action="store_true",
                           help="Don't save job stats to job_jobid_status.tsv")
 optional_dsq.add_argument("--stdout",
@@ -189,8 +189,8 @@ else:
     job_info["slurm_args"]["--output"] = "dsq-{job_file_no_ext}-%A_%{array_fmt_width}a-%N.out".format(**job_info)
 
 # set ouput directory
-if args.supress_stats_file:
-    job_info["status_dir_arg"] = "--supress-stats-file"
+if args.suppress_stats_file:
+    job_info["status_dir_arg"] = "--suppress-stats-file"
 else:
     if args.status_dir is not None:
         job_info["status_dir"] = path.abspath(args.status_dir[0])
