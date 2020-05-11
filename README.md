@@ -101,7 +101,7 @@ scancel 14567_[10-20]
 
 ## dSQ Output
 
-You can monitor the status of your jobs in Slurm by using `squeue -u <netid>`.
+You can monitor the status of your jobs in Slurm by using `squeue -u <netid>`, `squeue -j <jobid>`, or `dsqa -j <jobid>`.
 
 dSQ creates a file named `job_jobid_status.tsv`, unless you suppress this output with `--supress-stats-file`. This file will report the success or failure of each job as it finishes. Note this file will not contain information for any jobs that were canceled (e.g. by the user with scancel) before they began. This file contains details about the completed jobs in the following tab-separated columns:
 
