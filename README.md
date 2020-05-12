@@ -40,7 +40,6 @@ module load dSQ
 
 You can also download or clone this repo and use the scripts directly.
 
-
 `dsq` takes a few arguments, then writes a job submission script (default) or can directly submit a job for you. **The resources you request will be given to each job in the array (each line in your job file)**, e.g. requesting 2 GB of RAM with dSQ will run each individual job with a separate 2 GB of RAM available. Run `sbatch --help` or see the [official Slurm documentation](https://slurm.schedmd.com/sbatch.html) for more info on sbatch options. dSQ will set a default job name of dsq-jobfile (your job file name without the file extension). dSQ will also set the job output file name pattern to dsq-jobfile-%A_%a-%N.out, which will capture each of your jobs' output to a file with the job's ID(%A), its array index or zero-based line number(%a), and the host name of the node it ran on (%N). If you are handling output in each of your jobs, set this to `/dev/null`, which will stop these files from being created.
 
 ``` text
@@ -146,5 +145,5 @@ PREEMPTED      1     0
 You can redirect the report and the failed jobs to separate files:
 
 ``` bash
-dsqa jobsfile.txt -j 2629186 -f jobsfile.txt > re-run_jobs.txt 2> 2629186_report.txt
+dsqa -j 2629186 -f jobsfile.txt > re-run_jobs.txt 2> 2629186_report.txt
 ```
