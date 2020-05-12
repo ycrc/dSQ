@@ -13,7 +13,7 @@ dSQ adds a few nice features on top of job arrays:
 * dSQAutopsy can create a new job file that has only the jobs that didn't complete from your last run.
 * All you need is Python 2.7+, or Python 3.
 
-dSQ is _not_ recommended for situations where the initialiazation of the job takes most of its execution time and it is re-usable. These situations are much better handled by a worker-based job handler.
+dSQ is _not_ recommended for situations where the initialization of the job takes most of its execution time and it is re-usable. These situations are much better handled by a worker-based job handler.
 
 ## Step 1: Create Your Job File
 
