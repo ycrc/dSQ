@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import sys
+import os
 import argparse
 from textwrap import fill
 from subprocess import call, check_output
@@ -103,7 +104,7 @@ desc = "\n".join([safe_fill(x, term_columns-1) for x in str.splitlines(desc)])
 parser = argparse.ArgumentParser(description=desc,
                                  usage='%(prog)s --job-id jobid [--job-file jobfile.txt [--states STATES] > new_jobs.txt]', 
                                  formatter_class=argparse.RawTextHelpFormatter,
-                                 prog=sys.argv[0])
+                                 prog=os.path.basename(sys.argv[0]))
 parser.add_argument('-v','--version',
                     action='version',
                     version='%(prog)s {}'.format(__version__))

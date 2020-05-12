@@ -78,7 +78,7 @@ parser = argparse.ArgumentParser(description=desc,
                                  add_help=False, 
                                  usage="%(prog)s --job-file jobfile [dSQ args] [slurm args]", 
                                  formatter_class=argparse.RawTextHelpFormatter,
-                                 prog=sys.argv[0])
+                                 prog=path.basename(sys.argv[0]))
 
 tmp = parser.add_argument_group("Required Arguments")
 required_dsq = tmp.add_mutually_exclusive_group(required=True)

@@ -31,7 +31,7 @@ A wrapper script to run job arrays from job files, where each line in the plain-
 parser = argparse.ArgumentParser(description=desc,
                                  usage='%(prog)s --job-file jobfile.txt [--suppress-stats-file | --status-dir dir/ ]', 
                                  formatter_class=argparse.RawTextHelpFormatter,
-                                 prog=sys.argv[0])
+                                 prog=os.path.basename(sys.argv[0]))
 parser.add_argument('-v','--version',
                     action='version',
                     version='%(prog)s {}'.format(__version__))
