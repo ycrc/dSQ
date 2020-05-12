@@ -1,15 +1,16 @@
 #!/bin/env python
+from datetime import datetime
+from functools import partial
+from os import path
+from subprocess import Popen
+import argparse
 import os
+import platform
+import signal
 import sys
 import time
-import signal
-import platform
-import argparse
-from functools import partial
-from subprocess import Popen
-from datetime import datetime
 
-__version__ = 1.0
+__version__ = 1.01
 
 def forward_signal_to_child(pid, signum, frame):
     print("[dSQ]: ", pid, signum, frame)
@@ -29,15 +30,15 @@ A wrapper script to run job arrays from job files, where each line in the plain-
 """.format(__version__)
 
 parser = argparse.ArgumentParser(description=desc,
-                                 usage='%(prog)s --job-file jobfile.txt [--suppress-stats-file | --status-dir dir/ ]', 
+                                 usage="%(prog)s --job-file jobfile.txt [--suppress-stats-file | --status-dir dir/ ]", 
                                  formatter_class=argparse.RawTextHelpFormatter,
-                                 prog=os.path.basename(sys.argv[0]))
-parser.add_argument('-v','--version',
-                    action='version',
-                    version='%(prog)s {}'.format(__version__))
-parser.add_argument('--job-file',
+                                 prog=path.basename(sys.argv[0]))
+parser.add_argument("-v","--version",
+                    action="version",
+                    version="%(prog)s {}".format(__version__))
+parser.add_argument("--job-file",
                     nargs=1,
-                    help='Job file, one job per line (not your job submission script).')
+                    help="Job file, one job per line (not your job submission script).")
 parser.add_argument("--suppress-stats-file",
                     action="store_true",
                     help="Don't save job stats to job_jobid_status.tsv")
@@ -64,7 +65,7 @@ tid = int(os.environ.get("SLURM_ARRAY_TASK_ID"))
 hostname = platform.node()
 
 # use task_id to get my job out of job_file
-with open(job_file, 'r') as tf:
+with open(job_file, "r") as tf:
     for i, l in enumerate(tf):
         if i == tid:
             mycmd=l.strip()
@@ -86,7 +87,7 @@ if print_stats_file:
                         [tid, ret, hostname, time_start, time_end, time_elapsed, mycmd]))
 
     # append status file with job stats
-    with open(os.path.join(status_outdir, "job_{}_status.tsv".format(jid)), "a") as out_status:
+    with open(path.join(status_outdir, "job_{}_status.tsv".format(jid)), "a") as out_status:
         out_status.write("{Array_Task_ID}\t{Exit_Code}\t{Hostname}\t{T_Start}\t{T_End}\t{T_Elapsed:.02f}\t{Task}\n".format(**out_dict))
 
 sys.exit(ret)

@@ -1,28 +1,29 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import sys
-import os
-import argparse
-from textwrap import fill
-from subprocess import call, check_output
 from collections import defaultdict
 from itertools import groupby
+from os import path
+from subprocess import call, check_output
+from textwrap import fill
+import argparse
+import os
+import sys
 
-__version__ = 1.0
-array_state_header = ['JobID', 'State']
-sacct_cmd = ['sacct', 
-             '-o' + ','.join(array_state_header),
-             '-nXPj']
-possible_states = ['BOOT_FAIL', 'CANCELLED', 'COMPLETED', 'DEADLINE', 'FAILED', 'NODE_FAIL', 'OUT_OF_MEMORY', 
-                   'PENDING', 'PREEMPTED', 'RUNNING', 'REQUEUED', 'RESIZING', 'REVOKED', 'SUSPENDED', 'TIMEOUT']
+__version__ = 1.01
+array_state_header = ["JobID", "State"]
+sacct_cmd = ["sacct", 
+             "-o" + ",".join(array_state_header),
+             "-nXPj"]
+possible_states = ["BOOT_FAIL", "CANCELLED", "COMPLETED", "DEADLINE", "FAILED", "NODE_FAIL", "OUT_OF_MEMORY", 
+                   "PENDING", "PREEMPTED", "RUNNING", "REQUEUED", "RESIZING", "REVOKED", "SUSPENDED", "TIMEOUT"]
 
 def collapse_ranges(i):
     for a, b in groupby(enumerate(i), lambda pair: pair[1] - pair[0]):
         b = list(b)
         if b[0][1] == b[-1][1]:
-            yield '{}'.format(b[0][1])
+            yield "{}".format(b[0][1])
         else:
-            yield '{}-{}'.format(b[0][1], b[-1][1])
+            yield "{}-{}".format(b[0][1], b[-1][1])
 
 def safe_fill(text, wrap_width):
     if sys.__stdin__.isatty():
@@ -33,45 +34,45 @@ def safe_fill(text, wrap_width):
 def get_state_status(jid, rerun_states):
     state_summary = defaultdict(lambda: 0)
     array_states = defaultdict(lambda: [])
-    state_summary_header = ['State', 'Num_Jobs', 'Indices']
+    state_summary_header = ["State", "Num_Jobs", "Indices"]
     reruns = []
     sacct_cmd.append(job_id)
     try:
-        sacct_output = check_output(sacct_cmd).decode().split('\n')
+        sacct_output = check_output(sacct_cmd).decode().split("\n")
     except Exception as e:
         # give up if we hit an error
         print("Error looking up job {}.".format(job_id), file=sys.stderr)
         sys.exit(1)
     column_lengths = dict(zip(state_summary_header, [len(x)+2 for x in state_summary_header]))
-    # if there's job info
+    # if there is job info
     if len(sacct_output)>=1:
         for l in sacct_output:
-            split_line = l.split('|')
+            split_line = l.split("|")
             if len(split_line) == len(array_state_header):
                 line_dict = dict(zip(array_state_header,split_line))
-                state_summary[line_dict['State']]+=1
+                state_summary[line_dict["State"]]+=1
                 # track column widths for pretty printing
-                if len(line_dict['State'])+2 > column_lengths['State']:
-                    column_lengths['State']=len(line_dict['State'])+2
-                if '_' in line_dict['JobID']:
+                if len(line_dict["State"])+2 > column_lengths["State"]:
+                    column_lengths["State"]=len(line_dict["State"])+2
+                if "_" in line_dict["JobID"]:
                     # track array idx
-                    array_id = int(line_dict['JobID'].split('_')[1])
-                    array_states[line_dict['State']].append(array_id)
-                    if line_dict['State'] in rerun_states:
+                    array_id = int(line_dict["JobID"].split("_")[1])
+                    array_states[line_dict["State"]].append(array_id)
+                    if line_dict["State"] in rerun_states:
                         # add them to the reruns list if desired
                         reruns.append(array_id)
 
     for state in array_states:
-        array_states[state] = ','.join(collapse_ranges(sorted(array_states[state])))
-        if len(array_states[state])+2 > column_lengths['State']:
+        array_states[state] = ",".join(collapse_ranges(sorted(array_states[state])))
+        if len(array_states[state])+2 > column_lengths["State"]:
             # track column widths for pretty printing
-            column_lengths['State'] = len(array_states[state])+2
+            column_lengths["State"] = len(array_states[state])+2
 
-    print('State Summary for Array {}'.format(job_id), file=sys.stderr)
-    summary_template = '{{:<{}}}{{:^{}}}{{:<{}}}'.format(*[column_lengths[x] for x in state_summary_header])
+    print("State Summary for Array {}".format(job_id), file=sys.stderr)
+    summary_template = "{{:<{}}}{{:^{}}}{{:<{}}}".format(*[column_lengths[x] for x in state_summary_header])
 
     print(summary_template.format(*state_summary_header), file=sys.stderr)
-    print(summary_template.format(*['-' * len(x) for x in state_summary_header]), file=sys.stderr)
+    print(summary_template.format(*["-" * len(x) for x in state_summary_header]), file=sys.stderr)
     for state in sorted(state_summary, key=state_summary.get, reverse=True):
         print(summary_template.format(state, state_summary[state], array_states[state]), file=sys.stderr)
     return reruns
@@ -102,42 +103,42 @@ desc = "\n".join([safe_fill(x, term_columns-1) for x in str.splitlines(desc)])
 
 # argument parsing
 parser = argparse.ArgumentParser(description=desc,
-                                 usage='%(prog)s --job-id jobid [--job-file jobfile.txt [--states STATES] > new_jobs.txt]', 
+                                 usage="%(prog)s --job-id jobid [--job-file jobfile.txt [--states STATES] > new_jobs.txt]", 
                                  formatter_class=argparse.RawTextHelpFormatter,
-                                 prog=os.path.basename(sys.argv[0]))
-parser.add_argument('-v','--version',
-                    action='version',
-                    version='%(prog)s {}'.format(__version__))
-parser.add_argument('-j', '--job-id',
+                                 prog=path.basename(sys.argv[0]))
+parser.add_argument("-v","--version",
+                    action="version",
+                    version="%(prog)s {}".format(__version__))
+parser.add_argument("-j", "--job-id",
                     nargs=1,
                     required=True,
-                    help='The Job ID of a running or completed dSQ Array')
-parser.add_argument('-f', '--job-file',
+                    help="The Job ID of a running or completed dSQ Array")
+parser.add_argument("-f", "--job-file",
                     nargs=1,
-                    help='Job file, one job per line (not your job submission script).')
-parser.add_argument('-s', '--states',
+                    help="Job file, one job per line (not your job submission script).")
+parser.add_argument("-s", "--states",
                     nargs=1,
-                    default='CANCELLED,NODE_FAIL,PREEMPTED',
-                    help='Comma separated list of states to use for re-writing job file. Default: CANCELLED,NODE_FAIL,PREEMPTED')
+                    default="CANCELLED,NODE_FAIL,PREEMPTED",
+                    help="Comma separated list of states to use for re-writing job file. Default: CANCELLED,NODE_FAIL,PREEMPTED")
 
 args = parser.parse_args()
 job_id = args.job_id[0]
 rerun_states = []
-for state in args.states.split(','):
+for state in args.states.split(","):
     if state in possible_states:
         rerun_states.append(state)
     else:
-        print('Unknown state: {}.'.format(state), file=sys.stderr)
-        print('Choose from {}.'.format(','.join(possible_states)), file=sys.stderr)
+        print("Unknown state: {}.".format(state), file=sys.stderr)
+        print("Choose from {}.".format(",".join(possible_states)), file=sys.stderr)
         sys.exit(1)
 
 print_reruns = False
 if (args.job_file):
     try:
-        job_file = open(args.job_file[0], 'r')
+        job_file = open(args.job_file[0], "r")
         print_reruns = True
     except Exception as e:
-        print('Could not open {}.'.format(args.job_file[0]), file=sys.stderr)
+        print("Could not open {}.".format(args.job_file[0]), file=sys.stderr)
         sys.exit(1)
 
 reruns = get_state_status(job_id, rerun_states)

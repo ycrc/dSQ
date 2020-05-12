@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from subprocess import call, check_output
 from datetime import datetime
-from textwrap import fill 
 from os import path
-import os
-import itertools
+from subprocess import call, check_output
+from textwrap import fill 
 import argparse
-import sys
+import itertools
+import os
 import re
+import sys
 
-__version__ = 1.0
+__version__ = 1.01
 
 def safe_fill(text, wrap_width):
     if sys.__stdin__.isatty():
