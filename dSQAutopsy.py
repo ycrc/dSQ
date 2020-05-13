@@ -9,7 +9,7 @@ import argparse
 import os
 import sys
 
-__version__ = 1.01
+__version__ = 1.02
 array_state_header = ["JobID", "State"]
 sacct_cmd = ["sacct", 
              "-o" + ",".join(array_state_header),

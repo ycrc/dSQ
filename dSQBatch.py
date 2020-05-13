@@ -10,7 +10,7 @@ import signal
 import sys
 import time
 
-__version__ = 1.01
+__version__ = 1.02
 
 def forward_signal_to_child(pid, signum, frame):
     print("[dSQ]: ", pid, signum, frame)
