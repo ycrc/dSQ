@@ -27,7 +27,9 @@ def collapse_ranges(i):
 
 def expand_ranges(idx_range):
     if "[" in idx_range:
-        for sub_idx in idx_range.strip("[] ").split(","):
+        start = idx_range.find('[')+1
+        end = a.find(']') if a.find('%') == -1 else a.find('%')
+        for sub_idx in idx_range[start:end].split(","):
             if "-" not in sub_idx:
                 yield int(sub_idx)
             else:
@@ -70,8 +72,10 @@ def get_state_status(jid, rerun_states):
                     array_ids = list(expand_ranges(line_dict["JobID"].split("_")[1]))
                     array_states[line_dict["State"]] = array_states[line_dict["State"]]+ array_ids
                     state_summary[line_dict["State"]]+=len(array_ids)
-                    if line_dict["State"] in rerun_states:
+                    if any([line_dict["State"].startswith(x) for x in rerun_states]):
                         # add them to the reruns list if desired
+                        # some states can have info appended, e.g.
+                        # "CANCELLED by 124412", but want to treat it as CANCELLED
                         reruns = reruns + array_ids
                 else:
                     print("{} does not look like a job array.".format(jid), file=sys.stderr)
