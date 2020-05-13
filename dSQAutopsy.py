@@ -28,7 +28,7 @@ def collapse_ranges(i):
 def expand_ranges(idx_range):
     if "[" in idx_range:
         start = idx_range.find('[')+1
-        end = a.find(']') if a.find('%') == -1 else a.find('%')
+        end = idx_range.find(']') if idx_range.find('%') == -1 else idx_range.find('%')
         for sub_idx in idx_range[start:end].split(","):
             if "-" not in sub_idx:
                 yield int(sub_idx)
@@ -83,13 +83,12 @@ def get_state_status(jid, rerun_states):
 
     for state in array_states:
         array_states[state] = ",".join(collapse_ranges(sorted(array_states[state])))
-        if len(array_states[state])+2 > column_lengths["State"]:
+        if len(array_states[state])+2 > column_lengths["Indices"]:
             # track column widths for pretty printing
-            column_lengths["State"] = len(array_states[state])+2
+            column_lengths["Indices"] = len(array_states[state])+2
 
     print("State Summary for Array {}".format(job_id), file=sys.stderr)
     summary_template = "{{:<{}}}{{:^{}}}{{:<{}}}".format(*[column_lengths[x] for x in state_summary_header])
-
     print(summary_template.format(*state_summary_header), file=sys.stderr)
     print(summary_template.format(*["-" * len(x) for x in state_summary_header]), file=sys.stderr)
     for state in sorted(state_summary, key=state_summary.get, reverse=True):
