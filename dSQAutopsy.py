@@ -25,6 +25,18 @@ def collapse_ranges(i):
         else:
             yield "{}-{}".format(b[0][1], b[-1][1])
 
+def expand_ranges(idx_range):
+    if "[" in idx_range:
+        for sub_idx in idx_range.strip("[] ").split(","):
+            if "-" not in sub_idx:
+                yield int(sub_idx)
+            else:
+                low, high = sub_idx.split("-", 1)
+                for i in range(int(low), int(high) + 1):
+                    yield int(i)
+    else:
+        yield int(idx_range)
+
 def safe_fill(text, wrap_width):
     if sys.__stdin__.isatty():
         return fill(text, wrap_width)
@@ -50,17 +62,20 @@ def get_state_status(jid, rerun_states):
             split_line = l.split("|")
             if len(split_line) == len(array_state_header):
                 line_dict = dict(zip(array_state_header,split_line))
-                state_summary[line_dict["State"]]+=1
                 # track column widths for pretty printing
                 if len(line_dict["State"])+2 > column_lengths["State"]:
                     column_lengths["State"]=len(line_dict["State"])+2
                 if "_" in line_dict["JobID"]:
                     # track array idx
-                    array_id = int(line_dict["JobID"].split("_")[1])
-                    array_states[line_dict["State"]].append(array_id)
+                    array_ids = list(expand_ranges(line_dict["JobID"].split("_")[1]))
+                    array_states[line_dict["State"]] = array_states[line_dict["State"]]+ array_ids
+                    state_summary[line_dict["State"]]+=len(array_ids)
                     if line_dict["State"] in rerun_states:
                         # add them to the reruns list if desired
-                        reruns.append(array_id)
+                        reruns = reruns + array_ids
+                else:
+                    print("{} does not look like a job array.".format(jid), file=sys.stderr)
+                    sys.exit(1)
 
     for state in array_states:
         array_states[state] = ",".join(collapse_ranges(sorted(array_states[state])))
