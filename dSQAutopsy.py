@@ -59,7 +59,10 @@ def get_state_status(jid, rerun_states):
         sys.exit(1)
     column_lengths = dict(zip(state_summary_header, [len(x)+2 for x in state_summary_header]))
     # if there is job info
-    if len(sacct_output)>=1:
+    if sacct_output[0] == "":
+        print("Couldn't look up job. (Does sacct -j {} return anything?)".format(jid))
+        sys.exit(1)
+    else:
         for l in sacct_output:
             split_line = l.split("|")
             if len(split_line) == len(array_state_header):
