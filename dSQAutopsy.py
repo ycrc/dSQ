@@ -9,7 +9,7 @@ import argparse
 import os
 import sys
 
-__version__ = 1.02
+__version__ = 1.04
 array_state_header = ["JobID", "State"]
 sacct_cmd = ["sacct", 
              "-o" + ",".join(array_state_header),
@@ -145,7 +145,7 @@ parser.add_argument("-s", "--states",
 args = parser.parse_args()
 job_id = args.job_id[0]
 rerun_states = []
-for state in args.states.split(","):
+for state in args.states[0].split(","):
     if state in possible_states:
         rerun_states.append(state)
     else:

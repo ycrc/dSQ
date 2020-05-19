@@ -10,7 +10,7 @@ import os
 import re
 import sys
 
-__version__ = 1.02
+__version__ = 1.04
 
 def safe_fill(text, wrap_width):
     if sys.__stdin__.isatty():
