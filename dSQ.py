@@ -3,7 +3,7 @@ from __future__ import print_function
 from datetime import datetime
 from os import path
 from subprocess import call, check_output
-from textwrap import fill 
+from textwrap import fill
 import argparse
 import itertools
 import os
@@ -12,11 +12,13 @@ import sys
 
 __version__ = 1.04
 
+
 def safe_fill(text, wrap_width):
     if sys.__stdin__.isatty():
         return fill(text, wrap_width)
     else:
         return text
+
 
 # Check if dSQ is being run interactively
 if sys.__stdin__.isatty():
@@ -28,12 +30,16 @@ if sys.__stdin__.isatty():
 else:
     term_columns = 25
 
-#get slurm info
+# get slurm info
 try:
-    #get max configured array index
-    slurm_conf = check_output(["scontrol", "show", "conf"], universal_newlines=True).split("\n")[:-1]
-    max_array_size = [int(x.split("=")[1]) for x in slurm_conf if x.startswith("MaxArraySize")][0]
-    
+    # get max configured array index
+    slurm_conf = check_output(
+        ["scontrol", "show", "conf"], universal_newlines=True
+    ).split("\n")[:-1]
+    max_array_size = [
+        int(x.split("=")[1]) for x in slurm_conf if x.startswith("MaxArraySize")
+    ][0]
+
 except FileNotFoundError as e:
     print("You don't appear to have slurm available. Exiting!")
     sys.exit(1)
@@ -55,15 +61,17 @@ Some useful sbatch arguments:
 -c, --cpus-per-task=ncpus  Number of cpu cores required per job.
 --mem-per-cpu=MiB          Amount of memory per allocated cpu core per job.
 
-""".format(__version__)
-desc = "\n".join([safe_fill(x, term_columns-1) for x in str.splitlines(desc)])
+""".format(
+    __version__
+)
+desc = "\n".join([safe_fill(x, term_columns - 1) for x in str.splitlines(desc)])
 
 # helper functions for array range formatting
 # collapse job numbers in job file to ranges
 def _collapse_ranges(jobnums):
     # takes a list of numbers, returns tuples of numbers that specify representative ranges
     # inclusive
-    for i, t in itertools.groupby(enumerate(jobnums), lambda tx: tx[1]-tx[0]):
+    for i, t in itertools.groupby(enumerate(jobnums), lambda tx: tx[1] - tx[0]):
         t = list(t)
         yield t[0][1], t[-1][1]
 
@@ -71,75 +79,107 @@ def _collapse_ranges(jobnums):
 # format job ranges
 def format_range(jobnums):
     ranges = list(_collapse_ranges(jobnums))
-    return ",".join(["{}-{}".format(x[0],x[1]) if x[0]!=x[1] else str(x[0]) for x in ranges]) 
+    return ",".join(
+        ["{}-{}".format(x[0], x[1]) if x[0] != x[1] else str(x[0]) for x in ranges]
+    )
+
 
 # argument parsing
-parser = argparse.ArgumentParser(description=desc,
-                                 add_help=False, 
-                                 usage="%(prog)s --job-file jobfile [dSQ args] [slurm args]", 
-                                 formatter_class=argparse.RawTextHelpFormatter,
-                                 prog=path.basename(sys.argv[0]))
+parser = argparse.ArgumentParser(
+    description=desc,
+    add_help=False,
+    usage="%(prog)s --job-file jobfile [dSQ args] [slurm args]",
+    formatter_class=argparse.RawTextHelpFormatter,
+    prog=path.basename(sys.argv[0]),
+)
 
 tmp = parser.add_argument_group("Required Arguments")
 required_dsq = tmp.add_mutually_exclusive_group(required=True)
-required_dsq.add_argument("--job-file",
-                          metavar="jobs.txt",
-                          nargs=1,
-                          type=argparse.FileType("r"),
-                          help="Job file, one self-contained job per line.")
+required_dsq.add_argument(
+    "--job-file",
+    metavar="jobs.txt",
+    nargs=1,
+    type=argparse.FileType("r"),
+    help="Job file, one self-contained job per line.",
+)
 # add old option names, but keep them hidden
-required_dsq.add_argument("--taskfile",
-                          nargs=1,
-                          dest="job_file",
-                          type=argparse.FileType("r"),
-                          help=argparse.SUPPRESS)
-required_dsq.add_argument("--jobfile",
-                          nargs=1,
-                          dest="job_file",
-                          type=argparse.FileType("r"),
-                          help=argparse.SUPPRESS)
+required_dsq.add_argument(
+    "--taskfile",
+    nargs=1,
+    dest="job_file",
+    type=argparse.FileType("r"),
+    help=argparse.SUPPRESS,
+)
+required_dsq.add_argument(
+    "--jobfile",
+    nargs=1,
+    dest="job_file",
+    type=argparse.FileType("r"),
+    help=argparse.SUPPRESS,
+)
 # optional arguments
 optional_dsq = parser.add_argument_group("Optional Arguments")
-optional_dsq.add_argument("-h","--help",
-                          action="help",
-                          default=argparse.SUPPRESS,
-                          help="Show this help message and exit.")
-optional_dsq.add_argument("--version",
-                          action="version",
-                          version="%(prog)s {}".format(__version__))
-optional_dsq.add_argument("--batch-file",
-                          metavar="sub_script.sh",
-                          nargs=1,
-                          help=safe_fill("Name for batch script file. Defaults to dsq-jobfile-YYYY-MM-DD.sh", term_columns-24))
-optional_dsq.add_argument("-J", "--job-name",
-                          metavar="jobname",
-                          nargs=1,
-                          help="Name of your job array. Defaults to dsq-jobfile")
-optional_dsq.add_argument("--max-jobs",
-                          metavar="number",
-                          nargs=1,
-                          help="Maximum number of simultaneously running jobs from the job array.")
-optional_dsq.add_argument("-o", "--output",
-                          nargs=1,
-                          metavar="fmt_string",
-                          help=safe_fill("Slurm output file pattern. There will be one file per line in your job file. To suppress slurm out files, set this to /dev/null. Defaults to dsq-jobfile-%%A_%%a-%%N.out", term_columns-24))
-optional_dsq.add_argument("--status-dir",
-                          metavar="dir",
-                          nargs=1,
-                          help="Directory to save the job_jobid_status.tsv file to. Defaults to working directory.")
-optional_dsq.add_argument("--suppress-stats-file",
-                          action="store_true",
-                          help="Don't save job stats to job_jobid_status.tsv")
-optional_dsq.add_argument("--stdout",
-                          action="store_true",
-                          help=argparse.SUPPRESS)
-optional_dsq.add_argument("--submit",
-                          action="store_true",
-                          help="Submit the job array on the fly instead of creating a submission script.")
+optional_dsq.add_argument(
+    "-h",
+    "--help",
+    action="help",
+    default=argparse.SUPPRESS,
+    help="Show this help message and exit.",
+)
+optional_dsq.add_argument(
+    "--version", action="version", version="%(prog)s {}".format(__version__)
+)
+optional_dsq.add_argument(
+    "--batch-file",
+    metavar="sub_script.sh",
+    nargs=1,
+    help=safe_fill(
+        "Name for batch script file. Defaults to dsq-jobfile-YYYY-MM-DD.sh",
+        term_columns - 24,
+    ),
+)
+optional_dsq.add_argument(
+    "-J",
+    "--job-name",
+    metavar="jobname",
+    nargs=1,
+    help="Name of your job array. Defaults to dsq-jobfile",
+)
+optional_dsq.add_argument(
+    "--max-jobs",
+    metavar="number",
+    nargs=1,
+    help="Maximum number of simultaneously running jobs from the job array.",
+)
+optional_dsq.add_argument(
+    "-o",
+    "--output",
+    nargs=1,
+    metavar="fmt_string",
+    help=safe_fill(
+        "Slurm output file pattern. There will be one file per line in your job file. To suppress slurm out files, set this to /dev/null. Defaults to dsq-jobfile-%%A_%%a-%%N.out",
+        term_columns - 24,
+    ),
+)
+optional_dsq.add_argument(
+    "--status-dir",
+    metavar="dir",
+    nargs=1,
+    help="Directory to save the job_jobid_status.tsv file to. Defaults to working directory.",
+)
+optional_dsq.add_argument(
+    "--suppress-stats-file",
+    action="store_true",
+    help="Don't save job stats to job_jobid_status.tsv",
+)
+optional_dsq.add_argument("--stdout", action="store_true", help=argparse.SUPPRESS)
+optional_dsq.add_argument(
+    "--submit",
+    action="store_true",
+    help="Submit the job array on the fly instead of creating a submission script.",
+)
 # silently allow overriding --array, otherwise we calculate that
-optional_dsq.add_argument("-a", "--array",
-                          nargs=1,
-                          help=argparse.SUPPRESS)
+optional_dsq.add_argument("-a", "--array", nargs=1, help=argparse.SUPPRESS)
 
 args, user_slurm_args = parser.parse_known_args()
 
@@ -149,7 +189,9 @@ job_info["max_array_size"] = max_array_size
 job_info["max_jobs"] = args.max_jobs
 job_info["num_jobs"] = 0
 job_info["job_id_list"] = []
-job_info["run_script"] = path.join(path.dirname(path.abspath(sys.argv[0])), "dSQBatch.py")
+job_info["run_script"] = path.join(
+    path.dirname(path.abspath(sys.argv[0])), "dSQBatch.py"
+)
 job_info["job_file_name"] = path.abspath(args.job_file[0].name)
 job_info["job_file_arg"] = "--job-file {}".format(job_info["job_file_name"])
 job_info["slurm_args"] = {}
@@ -167,13 +209,20 @@ else:
     for i, line in enumerate(args.job_file[0]):
         if not (line.startswith("#") or line.rstrip() == ""):
             job_info["job_id_list"].append(i)
-            job_info["num_jobs"]+=1
+            job_info["num_jobs"] += 1
     job_info["max_array_idx"] = job_info["job_id_list"][-1]
     job_info["array_range"] = format_range(job_info["job_id_list"])
 
     # quit if we have too many array jobs
     if job_info["max_array_idx"] > job_info["max_array_size"]:
-        print(safe_fill("Your job file would result in a job array with a maximum index of {max_array_idx}. This exceeds allowed array size of {max_array_size}. Split the jobs into chunks that are smaller than {max_array_size}, or do more per job.".format(**job_info), term_columns-1))
+        print(
+            safe_fill(
+                "Your job file would result in a job array with a maximum index of {max_array_idx}. This exceeds allowed array size of {max_array_size}. Split the jobs into chunks that are smaller than {max_array_size}, or do more per job.".format(
+                    **job_info
+                ),
+                term_columns - 1,
+            )
+        )
         sys.exit(1)
     job_info["array_fmt_width"] = len(str(job_info["max_array_idx"]))
 
@@ -186,7 +235,9 @@ if job_info["num_jobs"] == 0:
 if args.output is not None:
     job_info["slurm_args"]["--output"] = args.output[0]
 else:
-    job_info["slurm_args"]["--output"] = "dsq-{job_file_no_ext}-%A_%{array_fmt_width}a-%N.out".format(**job_info)
+    job_info["slurm_args"][
+        "--output"
+    ] = "dsq-{job_file_no_ext}-%A_%{array_fmt_width}a-%N.out".format(**job_info)
 
 # set ouput directory
 if args.suppress_stats_file:
@@ -197,7 +248,12 @@ else:
     else:
         job_info["status_dir"] = path.abspath("./")
     if not os.access(job_info["status_dir"], os.W_OK | os.X_OK):
-        print("{status_dir} does not appear to be a writeable directory.".format(**job_info), file=sys.stderr)
+        print(
+            "{status_dir} does not appear to be a writeable directory.".format(
+                **job_info
+            ),
+            file=sys.stderr,
+        )
         sys.exit(1)
     job_info["status_dir_arg"] = "--status-dir {}".format(job_info["status_dir"])
 
@@ -222,7 +278,9 @@ if args.submit:
     for option, value in job_info["slurm_args"].items():
         job_info["cli_args"] += " %s=%s" % (option, value)
 
-    cmd = "sbatch {cli_args} {user_slurm_args} {run_script} {job_file_arg} {status_dir_arg}".format(**job_info)
+    cmd = "sbatch {cli_args} {user_slurm_args} {run_script} {job_file_arg} {status_dir_arg}".format(
+        **job_info
+    )
     print("submitting:\n {}".format(cmd))
     ret = call(cmd, shell=True)
     sys.exit(ret)
@@ -236,17 +294,36 @@ else:
             if args.batch_file is not None:
                 job_info["batch_script_out"] = open(args.batch_file[0], "w")
             else:
-                job_info["batch_script_out"] = open("dsq-{job_file_no_ext}-{today}.sh".format(**job_info), "w")
+                job_info["batch_script_out"] = open(
+                    "dsq-{job_file_no_ext}-{today}.sh".format(**job_info), "w"
+                )
         except Exception as e:
-                print("Error: Couldn't open {batch_script_out} for writing. ".format(**job_info), e)
-                
-    print("#!/bin/bash", file=job_info["batch_script_out"]) 
+            print(
+                "Error: Couldn't open {batch_script_out} for writing. ".format(
+                    **job_info
+                ),
+                e,
+            )
+
+    print("#!/bin/bash", file=job_info["batch_script_out"])
     for option, value in job_info["slurm_args"].items():
         print("#SBATCH {} {}".format(option, value), file=job_info["batch_script_out"])
     if len(job_info["user_slurm_args"]) > 0:
-        print("#SBATCH {user_slurm_args}".format(**job_info), file=job_info["batch_script_out"])
-    print("\n# DO NOT EDIT LINE BELOW".format(**job_info), file=job_info["batch_script_out"])
-    print("{run_script} {job_file_arg} {status_dir_arg}\n".format(**job_info), file=job_info["batch_script_out"])
+        print(
+            "#SBATCH {user_slurm_args}".format(**job_info),
+            file=job_info["batch_script_out"],
+        )
+    print(
+        "\n# DO NOT EDIT LINE BELOW".format(**job_info),
+        file=job_info["batch_script_out"],
+    )
+    print(
+        "{run_script} {job_file_arg} {status_dir_arg}\n".format(**job_info),
+        file=job_info["batch_script_out"],
+    )
     if not args.stdout:
-        print("Batch script generated. To submit your jobs, run:\n sbatch {}".format(job_info["batch_script_out"].name))
-
+        print(
+            "Batch script generated. To submit your jobs, run:\n sbatch {}".format(
+                job_info["batch_script_out"].name
+            )
+        )
