@@ -1,4 +1,5 @@
 #!/bin/env python
+from __future__ import print_function
 from datetime import datetime
 from functools import partial
 from os import path
@@ -89,6 +90,7 @@ with open(job_file, "r") as tf:
 if mycmd == "":
     st = datetime.now()
     mycmd = "# could not find zero-indexed line {} in job file {}".format(tid, job_file)
+    print(mycmd, file=sys.stderr)
     ret = 1
     et = datetime.now()
 else:
@@ -119,10 +121,11 @@ if print_stats_file:
     with open(
         path.join(status_outdir, "job_{}_status.tsv".format(jid)), "a"
     ) as out_status:
-        out_status.write(
-            "{Array_Task_ID}\t{Exit_Code}\t{Hostname}\t{T_Start}\t{T_End}\t{T_Elapsed:.02f}\t{Task}\n".format(
+        print(
+            "{Array_Task_ID}\t{Exit_Code}\t{Hostname}\t{T_Start}\t{T_End}\t{T_Elapsed:.02f}\t{Task}".format(
                 **out_dict
-            )
+            ),
+            file=out_status,
         )
 
 sys.exit(ret)
