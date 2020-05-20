@@ -78,6 +78,7 @@ tid = int(os.environ.get("SLURM_ARRAY_TASK_ID"))
 hostname = platform.node()
 
 # use task_id to get my job out of job_file
+mycmd = ""
 with open(job_file, "r") as tf:
     for i, l in enumerate(tf):
         if i == tid:
@@ -85,9 +86,15 @@ with open(job_file, "r") as tf:
             break
 
 # run job and track its execution time
-st = datetime.now()
-ret = exec_job(mycmd)
-et = datetime.now()
+if mycmd == "":
+    st = datetime.now()
+    mycmd = "# could not find zero-indexed line {} in job file {}".format(tid, job_file)
+    ret = 1
+    et = datetime.now()
+else:
+    st = datetime.now()
+    ret = exec_job(mycmd)
+    et = datetime.now()
 
 if print_stats_file:
     # set up job stats
