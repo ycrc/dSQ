@@ -10,7 +10,7 @@ import signal
 import sys
 import time
 
-__version__ = 1.04
+__version__ = 1.05
 
 
 def forward_signal_to_child(pid, signum, frame):

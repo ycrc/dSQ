@@ -10,7 +10,7 @@ import os
 import re
 import sys
 
-__version__ = 1.04
+__version__ = 1.05
 
 
 def safe_fill(text, wrap_width):
