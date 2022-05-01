@@ -56,18 +56,18 @@ def parse_args():
         action="store_true",
         help="Don't save job stats to stats file.",
     )
-    # parser.add_argument(
-    #    "--status-dir",
-    #    metavar="dir",
-    #    nargs=1,
-    #    default=".",
-    #    help="Directory to save the stats file to. Defaults to working directory.",
-    #)
+    parser.add_argument(
+       "--status-dir",
+       metavar="dir",
+       nargs=1,
+       default=".",
+       help="Directory to save the stats file to. Defaults to working directory.",
+    )
     parser.add_argument(
         "--stats-file",
         metavar="stats-file",
         nargs=1,
-        default="./job_%j_status.tsv",
+        default="job_%j_status.tsv",
         help="Location to save the stats.tsv file to. Defaults to ./job_jobid_status.tsv."
     )
     return parser.parse_args()
@@ -131,7 +131,7 @@ def run_job(args):
         
         # append status file with job stats
         with open(
-            args.stats_file[0], "a"
+            os.path.join(args.status_dir[0], args.stats_file[0]), "a"
             # os.path.join(args.status_dir[0], "job_{}_status.tsv".format(jid)), "a"
         ) as out_status:
             print(
