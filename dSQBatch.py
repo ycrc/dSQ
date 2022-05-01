@@ -68,7 +68,7 @@ def parse_args():
         metavar="stats-file",
         nargs=1,
         default="job_%j_status.tsv",
-        help="Location to save the stats.tsv file to. Defaults to ./job_jobid_status.tsv."
+        help="Filename of the stats file. Defaults to job_jobid_status.tsv."
     )
     return parser.parse_args()
 
