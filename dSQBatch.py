@@ -54,14 +54,21 @@ def parse_args():
     parser.add_argument(
         "--suppress-stats-file",
         action="store_true",
-        help="Don't save job stats to job_jobid_status.tsv",
+        help="Don't save job stats to stats file.",
     )
+    # parser.add_argument(
+    #    "--status-dir",
+    #    metavar="dir",
+    #    nargs=1,
+    #    default=".",
+    #    help="Directory to save the stats file to. Defaults to working directory.",
+    #)
     parser.add_argument(
-        "--status-dir",
-        metavar="dir",
+        "--stats-file",
+        metavar="stats-file",
         nargs=1,
-        default=".",
-        help="Directory to save the job_jobid_status.tsv file to. Defaults to working directory.",
+        default="./job_%j_status.tsv",
+        help="Location to save the stats.tsv file to. Defaults to ./job_jobid_status.tsv."
     )
     return parser.parse_args()
 
@@ -72,7 +79,12 @@ def run_job(args):
     # slurm calls individual job array indices "tasks"
 
     hostname = platform.node()
-
+    
+    if not args.stats_file[0].endswith(".tsv"):
+        args.stats_file[0] += ".tsv"
+    
+    args.stats_file[0] = args.stats_file[0].replace("%j", str(jid))
+    
     # use task_id to get my job out of job_file
     mycmd = ""
     with open(args.job_file[0], "r") as tf:
@@ -116,10 +128,11 @@ def run_job(args):
                 [tid, ret, hostname, time_start, time_end, time_elapsed, mycmd],
             )
         )
-
+        
         # append status file with job stats
         with open(
-            path.join(args.status_dir[0], "job_{}_status.tsv".format(jid)), "a"
+            args.stats_file[0], "a"
+            # os.path.join(args.status_dir[0], "job_{}_status.tsv".format(jid)), "a"
         ) as out_status:
             print(
                 "{Array_Task_ID}\t{Exit_Code}\t{Hostname}\t{T_Start}\t{T_End}\t{T_Elapsed:.02f}\t{Task}".format(
