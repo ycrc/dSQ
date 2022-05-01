@@ -56,8 +56,9 @@ Optional Arguments:
   --max-jobs number     Maximum number of simultaneously running jobs from the job array.
   -o fmt_string, --output fmt_string
                         Slurm output file pattern. There will be one file per line in your job file. To suppress slurm out files, set this to /dev/null. Defaults to dsq-jobfile-%A_%a-%N.out
-  --status-dir dir      Directory to save the job_jobid_status.tsv file to. Defaults to working directory.
-  --suppress-stats-file  Don't save job stats to job_jobid_status.tsv
+  --status-dir dir      Directory to save the stats file to. Defaults to working directory.
+  --stats-file file     Filename of the stats file. Defaults to job_jobid_status.tsv
+  --suppress-stats-file  Don't save job stats to stats file.
   --submit              Submit the job array on the fly instead of creating a submission script.
 ```
 
